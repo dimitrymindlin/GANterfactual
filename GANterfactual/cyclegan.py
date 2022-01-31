@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow_addons.layers import InstanceNormalization
 import tensorflow as tf
 
-from classifier import load_classifier
+from load_clf import load_classifier
 from configs.mura_pretraining_config import mura_config
 from dataloader import DataLoader
 from discriminator import build_discriminator
