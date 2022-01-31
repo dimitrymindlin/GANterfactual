@@ -1,26 +1,23 @@
-from __future__ import print_function, division
-
-import datetime
-import os
-
-import matplotlib.pyplot as plt
-import numpy as np
+from datetime import datetime
 
 from skimage.transform import resize
-
-from tensorflow.keras.layers import Input, Dropout, Concatenate
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.python.keras import Input
 from tensorflow_addons.layers import InstanceNormalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import Model
+import matplotlib.pyplot as plt
+from GANterfactual.dataloader import DataLoader
+from GANterfactual.discriminator import build_discriminator
+from GANterfactual.generator import build_generator
 import tensorflow as tf
+import os
+import numpy as np
 
-from load_clf import load_classifier
+from GANterfactual.load_clf import load_classifier
 from configs.mura_pretraining_config import mura_config
-from dataloader import DataLoader
-from discriminator import build_discriminator
-from generator import build_generator
 
 config = mura_config
+
 class CycleGAN():
 
     def __init__(self):
@@ -125,7 +122,7 @@ class CycleGAN():
         valid_P = self.d_P(fake_P)
 
         if classifier_path is not None:
-            self.classifier = load_classifier()  # TODO: CHECK
+            self.classifier = load_classifier()
             self.classifier._name = "classifier"
             self.classifier.trainable = False
 
@@ -170,7 +167,7 @@ class CycleGAN():
         # Configure data loader
         data_loader = DataLoader(dataset_name=dataset_name, img_res=(self.img_rows, self.img_cols), config=config)
 
-        start_time = datetime.datetime.now()
+        start_time = datetime.now()
 
         # Adversarial loss ground truths
         valid = np.ones((batch_size,) + self.disc_patch)
@@ -218,7 +215,7 @@ class CycleGAN():
                                                            imgs_N, imgs_P,
                                                            imgs_N, imgs_P])
 
-                elapsed_time = datetime.datetime.now() - start_time
+                elapsed_time = datetime.now() - start_time
 
                 if self.classifier is not None:
                     progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
@@ -242,7 +239,7 @@ class CycleGAN():
             # self.save(os.path.join('..','models','GANterfactual','ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
-        os.makedirs('images', exist_ok=True)
+        os.makedirs('../GANterfactual/images', exist_ok=True)
         r, c = 2, 3
 
         img_N = testN[np.newaxis, :, :, :]
@@ -309,11 +306,3 @@ class CycleGAN():
         data_loader.save_single(reconstructed, reconstructed_out_path)
 
         return [pred_original, pred_translated, pred_reconstructed]
-
-
-if __name__ == '__main__':
-    gan = CycleGAN()
-    gan.construct(classifier_path=os.path.join('..', 'models', 'classifier', 'model.h5'), classifier_weight=1)
-    gan.train(dataset_name=os.path.join("..", "data"), epochs=20, batch_size=1, print_interval=10,
-              sample_interval=100)
-    gan.save(os.path.join('..', 'models', 'GANterfactual'))
