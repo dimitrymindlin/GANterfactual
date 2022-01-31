@@ -1,0 +1,14 @@
+name: GANterfactual
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - tensorflow=2.6.0
+  - tensorflow-gpu=2.6.0
+  - matplotlib
+  - scikit-learn
+  - scikit-image
+  - pip
+  - pip:
+    - tensorflow-datasets==4.4.0
+    - tensorflow-addons[tensorflow]
