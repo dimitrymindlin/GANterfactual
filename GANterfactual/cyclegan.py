@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from skimage.transform import resize
-from tensorflow.python.keras import Input
+from tensorflow.keras import Input
 from tensorflow_addons.layers import InstanceNormalization
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
