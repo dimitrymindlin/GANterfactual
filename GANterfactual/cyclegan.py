@@ -18,6 +18,7 @@ from configs.mura_pretraining_config import mura_config
 
 config = mura_config
 
+
 class CycleGAN():
 
     def __init__(self):
@@ -161,13 +162,17 @@ class CycleGAN():
                                                 self.lambda_id, self.lambda_id],
                                   optimizer=optimizer)
 
-    def train(self, dataset_name, epochs, batch_size=1, train_N="NEGATIVE", train_P="POSITIVE", print_interval=100,
+    def train(self, dataset_name, epochs, batch_size=32, train_N="NEGATIVE", train_P="POSITIVE", print_interval=100,
               sample_interval=1000):
 
         # Configure data loader
+        batch_size = mura_config["train"]["batch_size"]
+
+        print("Loagind data...")
         data_loader = DataLoader(dataset_name=dataset_name, img_res=(self.img_rows, self.img_cols), config=config)
 
         start_time = datetime.now()
+        print(f"Started training at {start_time}")
 
         # Adversarial loss ground truths
         valid = np.ones((batch_size,) + self.disc_patch)
@@ -177,10 +182,11 @@ class CycleGAN():
         class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
-            for batch_i, (imgs_N, imgs_P) in enumerate(data_loader.load_batch(train_N, train_P, batch_size)):
+            for batch_i, (imgs_N, imgs_P) in enumerate(data_loader.load_batch()):
                 # ----------------------
                 #  Train Discriminators
-                # ----------------------
+                # ----------------------i
+
 
                 # Translate images to opposite domain
                 fake_P = self.g_NP.predict(imgs_N)
@@ -236,7 +242,7 @@ class CycleGAN():
                     self.sample_images(epoch, batch_i, imgs_N[0], imgs_P[0])
 
             # Comment this in if you want to save checkpoints:
-            # self.save(os.path.join('..','models','GANterfactual','ep_' + str(epoch)))
+            self.save(os.path.join('..', 'models', 'GANterfactual', 'ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
         os.makedirs('../GANterfactual/images', exist_ok=True)

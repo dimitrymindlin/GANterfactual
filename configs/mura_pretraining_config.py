@@ -13,7 +13,7 @@ mura_config = {
         "train_base": True,
         "augmentation": True,
         "use_class_weights": True,
-        "batch_size": 1,
+        "batch_size": 32,
         "epochs": 60,
         "learn_rate": 0.0001,
         "patience_learning_rate": 1,

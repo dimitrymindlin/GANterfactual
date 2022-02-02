@@ -14,5 +14,5 @@ config = mura_config
 def load_classifier():
     model = WristPredictNet(config, train_base=config['train']['train_base'])
     model.built = True
-    model.load_weights(GPU_WEIGHTS_PATH)
+    model.load_weights(M1_WEIGHTS_PATH)
     return model
