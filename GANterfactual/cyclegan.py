@@ -226,14 +226,14 @@ class CycleGAN():
                 if self.classifier is not None:
                     writer = tf.summary.create_file_writer(f'logs')
                     with writer.as_default():
-                        tf.summary.scalar('D_loss', f'{d_loss[0]:.5f}', step=epoch)
-                        tf.summary.scalar('acc', f'{100 * d_loss[1]:.5f}', step=epoch)
-                        tf.summary.scalar('G_loss', f'{g_loss[0]:.5f}', step=epoch)
-                        tf.summary.scalar('adv', f'{np.mean(g_loss[1:3]):.5f}', step=epoch)
-                        tf.summary.scalar('classifier_N', f'{g_loss[3]:.5f}', step=epoch)
-                        tf.summary.scalar('classifier_P', f'{g_loss[4]:.5f}', step=epoch)
-                        tf.summary.scalar('recon', f'{np.mean(g_loss[5:7]):.5f}', step=epoch)
-                        tf.summary.scalar('id', f'{np.mean(g_loss[7:9]):.5f}', step=epoch)
+                        tf.summary.scalar('D_loss', d_loss[0], step=epoch)
+                        tf.summary.scalar('acc', 100 * d_loss[1], step=epoch)
+                        tf.summary.scalar('G_loss', g_loss[0], step=epoch)
+                        tf.summary.scalar('adv', np.mean(g_loss[1:3]), step=epoch)
+                        tf.summary.scalar('classifier_N', g_loss[3], step=epoch)
+                        tf.summary.scalar('classifier_P', g_loss[4], step=epoch)
+                        tf.summary.scalar('recon', np.mean(g_loss[5:7]), step=epoch)
+                        tf.summary.scalar('id', g_loss[7:9], step=epoch)
 
                     progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
                                    f"[G_loss: {g_loss[0]:.5f}, adv: {np.mean(g_loss[1:3]):.5f}, classifier_N: {g_loss[3]:.5f}, classifier_P: {g_loss[4]:.5f}, " \
