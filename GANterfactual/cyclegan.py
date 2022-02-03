@@ -187,7 +187,6 @@ class CycleGAN():
                 #  Train Discriminators
                 # ----------------------i
 
-
                 # Translate images to opposite domain
                 fake_P = self.g_NP.predict(imgs_N)
                 fake_N = self.g_PN.predict(imgs_P)
@@ -224,7 +223,7 @@ class CycleGAN():
                 elapsed_time = datetime.now() - start_time
 
                 if self.classifier is not None:
-                    writer = tf.summary.create_file_writer(f'logs')
+                    writer = tf.summary.create_file_writer(f'logs/' + datetime.now().strftime("%Y-%m-%d--%H.%M"))
                     with writer.as_default():
                         tf.summary.scalar('D_loss', tf.reduce_sum(d_loss[0]), step=epoch)
                         tf.summary.scalar('acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
