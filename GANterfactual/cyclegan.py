@@ -14,18 +14,18 @@ import os
 import numpy as np
 
 from GANterfactual.load_clf import load_classifier
-from configs.mura_pretraining_config import mura_config
+from configs.gan_training_config import gan_config
 
-config = mura_config
+config = gan_config
 
 
 class CycleGAN():
 
     def __init__(self):
         # Input shape
-        self.img_rows = 320
-        self.img_cols = 320
-        self.channels = 3
+        self.img_rows = gan_config["data"]["image_height"]
+        self.img_cols = gan_config["data"]["image_width"]
+        self.channels = gan_config["data"]["image_channel"]
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
         # Calculate output shape of D (PatchGAN)
@@ -37,7 +37,7 @@ class CycleGAN():
         self.df = 64
 
         # Loss weights
-        self.lambda_cycle = 10.0  # Cycle-consistency loss
+        self.lambda_cycle = gan_config["train"]["cycle_consistency_loss_weight"]  # Cycle-consistency loss
         self.lambda_id = 0.1 * self.lambda_cycle  # Identity loss
 
         self.d_N = None
@@ -47,7 +47,7 @@ class CycleGAN():
         self.combined = None
         self.classifier = None
 
-    def construct(self, classifier_path=None, classifier_weight=None):
+    def construct(self, load_clf=True, classifier_weight=None):
         # Build the discriminators
         self.d_N = build_discriminator(self.img_shape, self.df)
         self.d_P = build_discriminator(self.img_shape, self.df)
@@ -56,9 +56,9 @@ class CycleGAN():
         self.g_NP = build_generator(self.img_shape, self.gf, self.channels)
         self.g_PN = build_generator(self.img_shape, self.gf, self.channels)
 
-        self.build_combined(classifier_path, classifier_weight)
+        self.build_combined(load_clf, classifier_weight)
 
-    def load_existing(self, cyclegan_folder, classifier_path=None, classifier_weight=None):
+    def load_existing(self, cyclegan_folder, load_clf=True, classifier_weight=None):
         custom_objects = {"InstanceNormalization": InstanceNormalization()}
 
         # Load discriminators from disk
@@ -77,7 +77,7 @@ class CycleGAN():
                                                custom_objects=custom_objects)
         self.g_PN._name = "g_PN"
 
-        self.build_combined(classifier_path, classifier_weight)
+        self.build_combined(load_clf, classifier_weight)
 
     def save(self, cyclegan_folder):
         os.makedirs(cyclegan_folder, exist_ok=True)
@@ -90,8 +90,10 @@ class CycleGAN():
         self.g_NP.save(os.path.join(cyclegan_folder, 'generator_np.h5'))
         self.g_PN.save(os.path.join(cyclegan_folder, 'generator_pn.h5'))
 
-    def build_combined(self, classifier_path=None, classifier_weight=None):
-        optimizer = Adam(0.0002, 0.5)
+    def build_combined(self, load_clf=True, classifier_weight=None):
+        optimizer = Adam(gan_config["train"]["learn_rate"],
+                         gan_config["train"]["beta1"],
+                         gan_config["train"]["beta2"])
 
         self.d_N.compile(loss='mse',
                          optimizer=optimizer,
@@ -122,7 +124,7 @@ class CycleGAN():
         valid_N = self.d_N(fake_N)
         valid_P = self.d_P(fake_P)
 
-        if classifier_path is not None:
+        if load_clf:
             self.classifier = load_classifier()
             self.classifier._name = "classifier"
             self.classifier.trainable = False
@@ -164,9 +166,12 @@ class CycleGAN():
 
     def train(self, dataset_name, epochs, batch_size=32, train_N="NEGATIVE", train_P="POSITIVE", print_interval=100,
               sample_interval=1000):
+        writer = tf.summary.create_file_writer(f'logs/' + datetime.now().strftime("%Y-%m-%d--%H.%M"))
+        config_matrix = [[k, str(w)] for k, w in config["train"].items()]
+        tf.summary.text("config", tf.convert_to_tensor(config_matrix), step=0)
 
         # Configure data loader
-        batch_size = mura_config["train"]["batch_size"]
+        batch_size = config["train"]["batch_size"]
 
         print("Loagind data...")
         data_loader = DataLoader(dataset_name=dataset_name, img_res=(self.img_rows, self.img_cols), config=config)
@@ -223,7 +228,6 @@ class CycleGAN():
                 elapsed_time = datetime.now() - start_time
 
                 if self.classifier is not None:
-                    writer = tf.summary.create_file_writer(f'logs/' + datetime.now().strftime("%Y-%m-%d--%H.%M"))
                     with writer.as_default():
                         tf.summary.scalar('D_loss', tf.reduce_sum(d_loss[0]), step=epoch)
                         tf.summary.scalar('acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
@@ -290,11 +294,11 @@ class CycleGAN():
         fig.savefig("images/%d_%d.png" % (epoch, batch_i))
         plt.close()
 
-    def predict(self, original_in_path, translated_out_path, reconstructed_out_path, force_original_aspect_ratio=False):
+    def predict(self, translated_out_path, reconstructed_out_path, force_original_aspect_ratio=False):
         assert (self.classifier is not None)
         data_loader = DataLoader(img_res=(self.img_rows, self.img_cols))
 
-        original = data_loader.load_single(original_in_path)
+        original = data_loader.load_single()
         original = original.reshape(1, original.shape[0], original.shape[1], original.shape[2])
 
         pred_original = self.classifier.predict(original)
@@ -311,7 +315,7 @@ class CycleGAN():
         pred_reconstructed = self.classifier.predict(reconstructed)
 
         if force_original_aspect_ratio:
-            orig_no_res = tf.keras.preprocessing.image.load_img(original_in_path)
+            orig_no_res = tf.keras.preprocessing.image.load_img()
             translated = resize(translated[0], (orig_no_res.height, orig_no_res.width))
             reconstructed = resize(reconstructed[0], (orig_no_res.height, orig_no_res.width))
         else:
