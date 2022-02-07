@@ -7,7 +7,7 @@ from GANterfactual.mura_model import WristPredictNet
 from configs.mura_pretraining_config import mura_config
 
 M1_WEIGHTS_PATH = "../checkpoints/mura/best/cp.ckpt"
-GPU_WEIGHTS_PATH = "checkpoints/mura/best/cp.ckpt"
+GPU_WEIGHTS_PATH = "checkpoints/mura_densenet/best/cp.ckpt"
 
 config = mura_config
 
