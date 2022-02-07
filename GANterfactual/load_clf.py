@@ -7,13 +7,13 @@ from GANterfactual.mura_model import WristPredictNet
 from configs.mura_pretraining_config import mura_config
 
 M1_WEIGHTS_PATH = "../checkpoints/mura/best/cp.ckpt"
-GPU_WEIGHTS_PATH = "checkpoints/mura_densenet/best/cp.ckpt"
+GPU_WEIGHTS_PATH = "checkpoints/mura/best/cp.ckpt"
 
 config = mura_config
 
 def load_classifier():
     print("Loading Pretrained Model ...")
-    model = WristPredictNet(config, train_base=config['train']['train_base'])
+    model = WristPredictNet(config, train_base=False)
     model.built = True
     model.load_weights(GPU_WEIGHTS_PATH)
     print("Model Loaded.")

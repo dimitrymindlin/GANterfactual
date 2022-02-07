@@ -6,6 +6,8 @@ from tensorflow_addons.layers import InstanceNormalization
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 import matplotlib.pyplot as plt
+
+from GANterfactual import losses
 from GANterfactual.dataloader import DataLoader
 from GANterfactual.discriminator import build_discriminator
 from GANterfactual.generator import build_generator
@@ -15,8 +17,7 @@ import numpy as np
 
 from GANterfactual.load_clf import load_classifier
 from configs.gan_training_config import gan_config
-
-config = gan_config
+from configs.mura_pretraining_config import mura_config
 
 
 class CycleGAN():
@@ -27,6 +28,7 @@ class CycleGAN():
         self.img_cols = gan_config["data"]["image_width"]
         self.channels = gan_config["data"]["image_channel"]
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
+        self.wasserstein = gan_config["train"]["wasserstein"]
 
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
@@ -59,7 +61,7 @@ class CycleGAN():
         self.build_combined(load_clf, classifier_weight)
 
     def load_existing(self, cyclegan_folder, load_clf=True, classifier_weight=None):
-        custom_objects = {"InstanceNormalization": InstanceNormalization()}
+        custom_objects = {"InstanceNormalization": InstanceNormalization}
 
         # Load discriminators from disk
         self.d_N = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_n.h5'),
@@ -113,8 +115,8 @@ class CycleGAN():
         reconstr_N = self.g_PN(fake_P)
         reconstr_P = self.g_NP(fake_N)
         # Identity mapping of images
-        img_N_id = self.g_PN(img_N)
-        img_P_id = self.g_NP(img_P)
+        #img_N_id = self.g_PN(img_N)
+        #img_P_id = self.g_NP(img_P)
 
         # For the combined model we will only train the generators
         self.d_N.trainable = False
@@ -129,6 +131,7 @@ class CycleGAN():
             self.classifier._name = "classifier"
             self.classifier.trainable = False
 
+            # Counterfactual loss?
             class_N_loss = self.classifier(fake_N)
             class_P_loss = self.classifier(fake_P)
 
@@ -136,48 +139,40 @@ class CycleGAN():
             self.combined = Model(inputs=[img_N, img_P],
                                   outputs=[valid_N, valid_P,
                                            class_N_loss, class_P_loss,
-                                           reconstr_N, reconstr_P,
-                                           img_N_id, img_P_id])
-
+                                           reconstr_N, reconstr_P])
+            # mae = tf.keras.losses.MeanAbsoluteError()
+            # TODO: Add Wasserstein
             self.combined.compile(loss=['mse', 'mse',
                                         'mse', 'mse',
-                                        'mae', 'mae',
                                         'mae', 'mae'],
                                   loss_weights=[1, 1,
                                                 classifier_weight, classifier_weight,
-                                                self.lambda_cycle, self.lambda_cycle,
-                                                self.lambda_id, self.lambda_id],
+                                                self.lambda_cycle, self.lambda_cycle],
                                   optimizer=optimizer)
 
         else:
             # Combined model trains generators to fool discriminators
             self.combined = Model(inputs=[img_N, img_P],
                                   outputs=[valid_N, valid_P,
-                                           reconstr_N, reconstr_P,
-                                           img_N_id, img_P_id])
+                                           reconstr_N, reconstr_P])
 
             self.combined.compile(loss=['mse', 'mse',
                                         'mae', 'mae',
                                         'mae', 'mae'],
                                   loss_weights=[1, 1,
-                                                self.lambda_cycle, self.lambda_cycle,
-                                                self.lambda_id, self.lambda_id],
+                                                self.lambda_cycle, self.lambda_cycle],
                                   optimizer=optimizer)
 
-    def train(self, dataset_name, epochs, batch_size=32, train_N="NEGATIVE", train_P="POSITIVE", print_interval=100,
-              sample_interval=1000):
+    def train(self, print_interval=100, sample_interval=1000):
         writer = tf.summary.create_file_writer(f'logs/' + datetime.now().strftime("%Y-%m-%d--%H.%M"))
-        config_matrix = [[k, str(w)] for k, w in config["train"].items()]
+        config_matrix = [[k, str(w)] for k, w in gan_config["train"].items()]
         tf.summary.text("config", tf.convert_to_tensor(config_matrix), step=0)
 
-        # Configure data loader
-        batch_size = config["train"]["batch_size"]
-
-        print("Loagind data...")
-        data_loader = DataLoader(dataset_name=dataset_name, img_res=(self.img_rows, self.img_cols), config=config)
+        batch_size = gan_config["train"]["batch_size"]
+        epochs = gan_config["train"]["epochs"]
+        data_loader = DataLoader(img_res=(self.img_rows, self.img_cols), config=mura_config)
 
         start_time = datetime.now()
-        print(f"Started training at {start_time}")
 
         # Adversarial loss ground truths
         valid = np.ones((batch_size,) + self.disc_patch)
@@ -199,6 +194,10 @@ class CycleGAN():
                 # Train the discriminators (original images = real / translated = Fake)
                 dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
                 dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
+                """d_loss_ = losses.wasserstein_loss_discriminator(
+                    prob_real_is_real=self.prob_real_a_is_real,
+                    prob_fake_is_real=self.prob_fake_pool_a_is_real,
+                )"""
                 dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)
 
                 dP_loss_real = self.d_P.train_on_batch(imgs_P, valid)
@@ -214,52 +213,52 @@ class CycleGAN():
 
                 if self.classifier is not None:
                     # Train the generators
+                    # TODO: Add Wasserstein
                     g_loss = self.combined.train_on_batch([imgs_N, imgs_P],
                                                           [valid, valid,
                                                            class_N, class_P,
-                                                           imgs_N, imgs_P,
                                                            imgs_N, imgs_P])
                 else:
                     g_loss = self.combined.train_on_batch([imgs_N, imgs_P],
                                                           [valid, valid,
-                                                           imgs_N, imgs_P,
                                                            imgs_N, imgs_P])
 
-                elapsed_time = datetime.now() - start_time
+                #elapsed_time = datetime.now() - start_time
 
                 if self.classifier is not None:
-                    with writer.as_default():
-                        tf.summary.scalar('D_loss', tf.reduce_sum(d_loss[0]), step=epoch)
-                        tf.summary.scalar('acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
-                        tf.summary.scalar('G_loss', tf.reduce_sum(g_loss[0]), step=epoch)
-                        tf.summary.scalar('adv', tf.reduce_sum(np.mean(g_loss[1:3])), step=epoch)
-                        tf.summary.scalar('classifier_N', tf.reduce_sum(g_loss[3]), step=epoch)
-                        tf.summary.scalar('classifier_P', tf.reduce_sum(g_loss[4]), step=epoch)
-                        tf.summary.scalar('recon', tf.reduce_sum(np.mean(g_loss[5:7])), step=epoch)
-                        tf.summary.scalar('id', tf.reduce_sum(g_loss[7:9]), step=epoch)
+                    if batch_i % print_interval == 0:
+                        with writer.as_default():
+                            tf.summary.scalar('D_loss', tf.reduce_sum(d_loss[0]), step=epoch)
+                            tf.summary.scalar('acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
+                            tf.summary.scalar('G_loss', tf.reduce_sum(g_loss[0]), step=epoch)
+                            tf.summary.scalar('adv', tf.reduce_sum(np.mean(g_loss[1:3])), step=epoch)
+                            tf.summary.scalar('classifier_N', tf.reduce_sum(g_loss[3]), step=epoch)
+                            tf.summary.scalar('classifier_P', tf.reduce_sum(g_loss[4]), step=epoch)
+                            tf.summary.scalar('recon', tf.reduce_sum(np.mean(g_loss[5:7])), step=epoch)
+                            tf.summary.scalar('id', tf.reduce_sum(g_loss[7:9]), step=epoch)
 
-                    progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
+                    """progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
                                    f"[G_loss: {g_loss[0]:.5f}, adv: {np.mean(g_loss[1:3]):.5f}, classifier_N: {g_loss[3]:.5f}, classifier_P: {g_loss[4]:.5f}, " \
                                    f"recon: {np.mean(g_loss[5:7]):.5f}, id: {np.mean(g_loss[7:9]):.5f}] " \
-                                   f"time: {elapsed_time}"
-                else:
-                    progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
+                                   f"time: {elapsed_time}"""
+                #else:
+                    """progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
                                    f"[G_loss: {g_loss[0]:.5f}, adv: {np.mean(g_loss[1:3]):.5f}, recon: {np.mean(g_loss[3:5]):.5f}, id: {np.mean(g_loss[5:7]):.5f}] " \
-                                   f"time: {elapsed_time}"
+                                   f"time: {elapsed_time}"""
 
-                # Plot the progress
+                """# Plot the progress
                 if batch_i % print_interval == 0:
-                    print(progress_str)
+                    print(progress_str)"""
 
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
                     self.sample_images(epoch, batch_i, imgs_N[0], imgs_P[0])
 
             # Comment this in if you want to save checkpoints:
-            self.save(os.path.join('..', 'models', 'GANterfactual', 'ep_' + str(epoch)))
+            self.save(os.path.join('models', 'GANterfactual', 'ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
-        os.makedirs('../GANterfactual/images', exist_ok=True)
+        os.makedirs('images', exist_ok=True)
         r, c = 2, 3
 
         img_N = testN[np.newaxis, :, :, :]
@@ -294,35 +293,58 @@ class CycleGAN():
         fig.savefig("images/%d_%d.png" % (epoch, batch_i))
         plt.close()
 
-    def predict(self, translated_out_path, reconstructed_out_path, force_original_aspect_ratio=False):
+    def predict(self, force_original_aspect_ratio=False):
+
         assert (self.classifier is not None)
-        data_loader = DataLoader(img_res=(self.img_rows, self.img_cols))
+        data_loader = DataLoader(img_res=(self.img_rows, self.img_cols), config=mura_config)
 
-        original = data_loader.load_single()
-        original = original.reshape(1, original.shape[0], original.shape[1], original.shape[2])
+        original, original_class = data_loader.load_single()
+        x = tf.expand_dims(original, 0)
+        # original = original.reshape(1, original.shape[0], original.shape[1], original.shape[2])
 
-        pred_original = self.classifier.predict(original)
-        if int(np.argmax(pred_original)) == 0:
+        pred_original = self.classifier.predict(x)
+        classification = int(np.argmax(pred_original))
+        if classification == 0:
+            classification_label = "NEGATIVE"
             print("PREDICTION -- NEGATIVE")
-            translated = self.g_NP.predict(original)
+            translated = self.g_NP.predict(x)
             reconstructed = self.g_PN.predict(translated)
         else:
+            classification_label = "POSITIVE"
             print("PREDICTION -- POSITIVE")
-            translated = self.g_PN.predict(original)
+            translated = self.g_PN.predict(x)
             reconstructed = self.g_NP.predict(translated)
 
         pred_translated = self.classifier.predict(translated)
         pred_reconstructed = self.classifier.predict(reconstructed)
 
-        if force_original_aspect_ratio:
-            orig_no_res = tf.keras.preprocessing.image.load_img()
-            translated = resize(translated[0], (orig_no_res.height, orig_no_res.width))
-            reconstructed = resize(reconstructed[0], (orig_no_res.height, orig_no_res.width))
-        else:
-            translated = translated[0]
-            reconstructed = reconstructed[0]
+        translated = translated[0]
+        reconstructed = reconstructed[0]
 
-        data_loader.save_single(translated, translated_out_path)
-        data_loader.save_single(reconstructed, reconstructed_out_path)
+        # data_loader.save_single(translated, translated_out_path)
+        # data_loader.save_single(reconstructed, reconstructed_out_path)
+        imgs = [original, translated, reconstructed]
+
+        #gen_imgs = np.concatenate(imgs)
+        gen_imgs = imgs
+        correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE'] if int(original_class) == 0 else ['POSITIVE',
+                                                                                                        'NEGATIVE',
+                                                                                                        'POSITIVE']
+
+        # Rescale images 0 - 1
+        #gen_imgs = 0.5 * gen_imgs + 0.5
+
+        c = 3
+        titles = ['Original', 'Translated', 'Reconstructed']
+        fig, axs = plt.subplots(1, c, figsize=(15, 5))
+        cnt = 0
+        for j in range(c):
+            axs[j].imshow(gen_imgs[cnt], cmap='gray')
+            axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification_label})')
+            axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
+            axs[j].axis('off')
+            cnt += 1
+        fig.savefig("predicted.png")
+        plt.close()
 
         return [pred_original, pred_translated, pred_reconstructed]
