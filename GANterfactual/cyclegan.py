@@ -7,7 +7,6 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 import matplotlib.pyplot as plt
 
-from GANterfactual import losses
 from GANterfactual.dataloader import DataLoader
 from GANterfactual.discriminator import build_discriminator
 from GANterfactual.generator import build_generator
