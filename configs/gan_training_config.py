@@ -11,7 +11,7 @@ gan_config = {
     },
     "train": {
         "optimizer": "adam",
-        "batch_size": 4,
+        "batch_size": 1,
         "learn_rate": 0.0001,
         "epochs": 30,
         "beta1": 0.5,
