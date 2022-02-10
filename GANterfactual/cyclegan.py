@@ -126,7 +126,7 @@ class CycleGAN():
         valid_P = self.d_P(fake_P)
 
         if load_clf:
-            self.classifier = load_classifier()
+            self.classifier = load_classifier(self.gan_config)
             self.classifier._name = "classifier"
             self.classifier.trainable = False
 
