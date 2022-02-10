@@ -1,6 +1,6 @@
 gan_config = {
     "dataset": {
-        "download": False,
+        "download": True,
     },
     "data": {
         "class_names": ["positive"],
@@ -10,15 +10,17 @@ gan_config = {
         "image_channel": 3,
     },
     "train": {
+        "execution_id": None,
         "optimizer": "adam",
         "batch_size": 1,
         "learn_rate": 0.0001,
-        "epochs": 30,
+        "epochs": 20,
         "beta1": 0.5,
         "beta2": 0.999,
-        "cycle_consistency_loss_weight": 8,
+        "cycle_consistency_loss_weight": 1,
         "identity_loss_weight": 1,
         "counterfactual_loss_weight": 1,
-        "wasserstein": False
+        "wasserstein": False,
+        "clf_ckpt": "2022-02-10--12.54"
     }
 }
