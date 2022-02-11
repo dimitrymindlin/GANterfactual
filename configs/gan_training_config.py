@@ -16,7 +16,6 @@ gan_config = {
         "learn_rate": 0.0001,
         "epochs": 20,
         "beta1": 0.5,
-        "beta2": 0.999,
         "cycle_consistency_loss_weight": 1,
         "identity_loss_weight": 1,
         "counterfactual_loss_weight": 1,

@@ -93,8 +93,7 @@ class CycleGAN():
 
     def build_combined(self, load_clf=True, classifier_weight=None):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
-                         self.gan_config["train"]["beta1"],
-                         self.gan_config["train"]["beta2"])
+                         self.gan_config["train"]["beta1"])
 
         self.d_N.compile(loss='mse',
                          optimizer=optimizer,
