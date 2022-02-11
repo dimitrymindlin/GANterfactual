@@ -20,12 +20,13 @@ class DataLoader():
 
     def load_batch(self):
         for pos, neg in zip(self.dataset.ds_train_pos, self.dataset.ds_train_neg):
-            yield pos[0], neg[0]
+            # pos = class label 1, neg = class label 0
+            yield neg[0], pos[0]  # "NORMAL, ABNORMAL"
 
     def load_single(self):
         self.dataset.ds_test.shuffle(self.dataset.ds_info.splits['test'].num_examples)
-        samples = [(x,y) for x, y in self.dataset.ds_test.take(1)]
-        index = np.random.randint(0,8)
+        samples = [(x, y) for x, y in self.dataset.ds_test.take(1)]
+        index = np.random.randint(0, 8)
         return samples[0][0][index], samples[0][1][index]
 
     def save_single(self, x, path):

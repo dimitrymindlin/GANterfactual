@@ -57,7 +57,7 @@ class MuraDataset():
         height = self.config['data']['image_height']
         width = self.config['data']['image_width']
         image = tf.image.resize_with_pad(image, height, width)
-        return tf.cast(image, tf.float32) / 255., label  # normalize pixel values
+        return tf.cast(image, tf.float32) / 127.5 - 1., label  # normalize pixel values between -1 and 1
 
     def benchmark(self):
         tfds.benchmark(self.ds_train, batch_size=self.config['train']['batch_size'])

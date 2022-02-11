@@ -3,13 +3,14 @@ from tensorflow.keras.layers import Input, Concatenate, UpSampling2D, Conv2D
 from tensorflow.keras.models import Model
 from tensorflow_addons.layers import InstanceNormalization
 
+
 def build_generator(img_shape, gf, channels):
     """U-Net Generator"""
 
     def conv2d(layer_input, filters, f_size=4):
         """Layers used during downsampling"""
         d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
-        d = LeakyReLU(alpha=0.2)(d)
+        d = LeakyReLU(alpha=0.2)(d) # TODO: Try Normal Relu https://machinelearningmastery.com/how-to-train-stable-generative-adversarial-networks/
         d = InstanceNormalization()(d)
         return d
 
@@ -25,7 +26,6 @@ def build_generator(img_shape, gf, channels):
 
     # Image input
     d0 = Input(shape=img_shape)
-
     # Downsampling
     d1 = conv2d(d0, gf)
     d2 = conv2d(d1, gf * 2)

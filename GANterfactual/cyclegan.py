@@ -177,12 +177,13 @@ class CycleGAN():
         class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
-            for batch_i, (imgs_P, imgs_N) in enumerate(data_loader.load_batch()):
+            for batch_i, (imgs_N, imgs_P) in enumerate(data_loader.load_batch()):
                 # ----------------------
                 #  Train Discriminators
                 # ----------------------i
 
                 # Translate images to opposite domain
+                # P = class label 1, N = class label 0
                 fake_P = self.g_NP.predict(imgs_N)
                 fake_N = self.g_PN.predict(imgs_P)
 
@@ -217,8 +218,11 @@ class CycleGAN():
                     if batch_i % print_interval == 0:
                         with writer.as_default():
                             tf.summary.scalar('D_loss', tf.reduce_sum(d_loss[0]), step=epoch)
+                            # the accuracy of a counterfactual image generator is the percentage of
+                            # counterfactuals that actually changed the classifier’s prediction
                             tf.summary.scalar('acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
                             tf.summary.scalar('G_loss', tf.reduce_sum(g_loss[0]), step=epoch)
+                            # cycle consistency loss
                             tf.summary.scalar('adv', tf.reduce_sum(np.mean(g_loss[1:3])), step=epoch)
                             tf.summary.scalar('classifier_N', tf.reduce_sum(g_loss[3]), step=epoch)
                             tf.summary.scalar('classifier_P', tf.reduce_sum(g_loss[4]), step=epoch)
