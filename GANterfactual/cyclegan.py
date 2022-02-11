@@ -177,7 +177,7 @@ class CycleGAN():
         class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
-            for batch_i, (imgs_N, imgs_P) in enumerate(data_loader.load_batch()):
+            for batch_i, (imgs_P, imgs_N) in enumerate(data_loader.load_batch()):
                 # ----------------------
                 #  Train Discriminators
                 # ----------------------i
