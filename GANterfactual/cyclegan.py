@@ -54,8 +54,8 @@ class CycleGAN():
         self.d_P = build_discriminator(self.img_shape, self.df)
 
         # Build the generators
-        self.g_NP = build_generator(self.img_shape, self.gf, self.channels, relu=self.gan_config['train']['leaky_relu'])
-        self.g_PN = build_generator(self.img_shape, self.gf, self.channels)
+        self.g_NP = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
+        self.g_PN = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
 
         self.build_combined(load_clf, classifier_weight)
 
