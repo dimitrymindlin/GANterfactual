@@ -13,6 +13,6 @@ for arg in sys.argv:
 
 if __name__ == '__main__':
     gan = CycleGAN(gan_config)
-    gan.construct(classifier_weight=1)
+    gan.construct(classifier_weight=gan_config['train']['classifier_weight'])
     gan.train()
-    gan.save(os.path.join('..', 'models', 'GANterfactual'))
+    #gan.save(os.path.join('..', 'models', 'GANterfactual'))
