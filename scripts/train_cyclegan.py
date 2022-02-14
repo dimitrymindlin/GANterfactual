@@ -5,11 +5,10 @@ from GANterfactual.cyclegan import CycleGAN
 from configs.gan_training_config import gan_config
 import sys
 
-gan_config
 for arg in sys.argv:
     if arg == "--cycle_consistency":
         gan_config["train"]["cycle_consistency_loss_weight"] = 8
-    elif arg == "--counterfactual":
+    if arg == "--counterfactual":
         gan_config["train"]["counterfactual_loss_weight"] = 8
 
 if __name__ == '__main__':
