@@ -1,16 +1,19 @@
-from tensorflow.keras.layers import Dropout, LeakyReLU
+from tensorflow.keras.layers import Dropout, LeakyReLU, ReLU
 from tensorflow.keras.layers import Input, Concatenate, UpSampling2D, Conv2D
 from tensorflow.keras.models import Model
 from tensorflow_addons.layers import InstanceNormalization
 
 
-def build_generator(img_shape, gf, channels):
+def build_generator(img_shape, gf, channels, leaky_relu=False):
     """U-Net Generator"""
 
     def conv2d(layer_input, filters, f_size=4):
         """Layers used during downsampling"""
         d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
-        d = LeakyReLU(alpha=0.2)(d) # TODO: Try Normal Relu https://machinelearningmastery.com/how-to-train-stable-generative-adversarial-networks/
+        if not leaky_relu:
+            d = ReLU()(d) # TODO: Try Normal Relu https://machinelearningmastery.com/how-to-train-stable-generative-adversarial-networks/
+        else:
+            d = LeakyReLU(alpha=0.3)(d)
         d = InstanceNormalization()(d)
         return d
 

@@ -20,6 +20,7 @@ gan_config = {
         "identity_loss_weight": 1,
         "counterfactual_loss_weight": 1,
         "wasserstein": False,
-        "clf_ckpt": "2022-02-10--12.54"
+        "clf_ckpt": "2022-02-10--12.54",
+        "leaky_relu": False
     }
 }
