@@ -57,7 +57,7 @@ class CycleGAN():
         self.g_NP = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
         self.g_PN = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
 
-        self.build_combined(load_clf, classifier_weight)
+        self.build_combined(classifier_weight)
 
     def load_existing(self, cyclegan_folder, load_clf=True, classifier_weight=None):
         custom_objects = {"InstanceNormalization": InstanceNormalization}
@@ -78,7 +78,7 @@ class CycleGAN():
                                                custom_objects=custom_objects)
         self.g_PN._name = "g_PN"
 
-        self.build_combined(load_clf, classifier_weight)
+        self.build_combined(classifier_weight)
 
     def save(self, cyclegan_folder):
         os.makedirs(cyclegan_folder, exist_ok=True)
@@ -91,7 +91,7 @@ class CycleGAN():
         self.g_NP.save(os.path.join(cyclegan_folder, 'generator_np.h5'))
         self.g_PN.save(os.path.join(cyclegan_folder, 'generator_pn.h5'))
 
-    def build_combined(self, load_clf=True, classifier_weight=None):
+    def build_combined(self, classifier_weight=None):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
                          self.gan_config["train"]["beta1"])
 
@@ -109,9 +109,7 @@ class CycleGAN():
         # Translate images to the other domain
         fake_P = self.g_NP(img_N)
         fake_N = self.g_PN(img_P)
-        # Translate images back to original domain
-        reconstr_N = self.g_PN(fake_P)
-        reconstr_P = self.g_NP(fake_N)
+
         # Identity mapping of images
         # img_N_id = self.g_PN(img_N)
         # img_P_id = self.g_NP(img_P)
@@ -124,40 +122,29 @@ class CycleGAN():
         valid_N = self.d_N(fake_N)
         valid_P = self.d_P(fake_P)
 
-        if load_clf:
-            self.classifier = load_classifier(self.gan_config)
-            self.classifier._name = "classifier"
-            self.classifier.trainable = False
+        # Counterfactual loss
+        self.classifier = load_classifier(self.gan_config)
+        self.classifier._name = "classifier"
+        self.classifier.trainable = False
+        class_N_loss = self.classifier(fake_N)
+        class_P_loss = self.classifier(fake_P)
 
-            # Counterfactual loss?
-            class_N_loss = self.classifier(fake_N)
-            class_P_loss = self.classifier(fake_P)
+        # Cycle-loss - Translate images back to original domain
+        reconstr_N = self.g_PN(fake_P)
+        reconstr_P = self.g_NP(fake_N)
 
-            # Combined model trains generators to fool discriminators
-            self.combined = Model(inputs=[img_N, img_P],
-                                  outputs=[valid_N, valid_P,
-                                           class_N_loss, class_P_loss,
-                                           reconstr_N, reconstr_P])
-            self.combined.compile(loss=['mse', 'mse',
-                                        'mse', 'mse',
-                                        'mae', 'mae'],
-                                  loss_weights=[1, 1,
-                                                classifier_weight, classifier_weight,
-                                                self.lambda_cycle, self.lambda_cycle],
-                                  optimizer=optimizer)
-
-        else:
-            # Combined model trains generators to fool discriminators
-            self.combined = Model(inputs=[img_N, img_P],
-                                  outputs=[valid_N, valid_P,
-                                           reconstr_N, reconstr_P])
-
-            self.combined.compile(loss=['mse', 'mse',
-                                        'mae', 'mae',
-                                        'mae', 'mae'],
-                                  loss_weights=[1, 1,
-                                                self.lambda_cycle, self.lambda_cycle],
-                                  optimizer=optimizer)
+        # Combined model trains generators to fool discriminators
+        self.combined = Model(inputs=[img_N, img_P],
+                              outputs=[valid_N, valid_P,
+                                       class_N_loss, class_P_loss,
+                                       reconstr_N, reconstr_P])
+        self.combined.compile(loss=['mse', 'mse',
+                                    'mse', 'mse',
+                                    'mae', 'mae'],
+                              loss_weights=[1, 1,
+                                            classifier_weight, classifier_weight,
+                                            self.lambda_cycle, self.lambda_cycle],
+                              optimizer=optimizer)
 
     def train(self, print_interval=100, sample_interval=1000):
         config_matrix = [[k, str(w)] for k, w in self.gan_config["train"].items()]
@@ -166,7 +153,7 @@ class CycleGAN():
 
         batch_size = self.gan_config["train"]["batch_size"]
         epochs = self.gan_config["train"]["epochs"]
-        data_loader = DataLoader(img_res=(self.img_rows, self.img_cols), config=mura_config)
+        data_loader = DataLoader(config=mura_config)
 
         # Adversarial loss ground truths
         valid = np.ones((batch_size,) + self.disc_patch)
@@ -179,7 +166,7 @@ class CycleGAN():
             for batch_i, (imgs_N, imgs_P) in enumerate(data_loader.load_batch()):
                 # ----------------------
                 #  Train Discriminators
-                # ----------------------i
+                # ----------------------
 
                 # Translate images to opposite domain
                 # P = class label 1, N = class label 0
@@ -189,7 +176,7 @@ class CycleGAN():
                 # Train the discriminators (original images = real / translated = Fake)
                 dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
                 dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
-                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)
+                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake) # TODO: Why 0.5 here?
 
                 dP_loss_real = self.d_P.train_on_batch(imgs_P, valid)
                 dP_loss_fake = self.d_P.train_on_batch(fake_P, fake)
@@ -202,17 +189,13 @@ class CycleGAN():
                 #  Train Generators
                 # ------------------
 
-                if self.classifier is not None:
-                    # Train the generators
-                    g_loss = self.combined.train_on_batch([imgs_N, imgs_P],
-                                                          [valid, valid,
-                                                           class_N, class_P,
-                                                           imgs_N, imgs_P])
-                else:
-                    g_loss = self.combined.train_on_batch([imgs_N, imgs_P],
-                                                          [valid, valid,
-                                                           imgs_N, imgs_P])
+                # Train the generators
+                g_loss = self.combined.train_on_batch([imgs_N, imgs_P],
+                                                      [valid, valid,
+                                                       class_N, class_P,
+                                                       imgs_N, imgs_P])
 
+                # Tensorboard logging
                 if self.classifier is not None:
                     if batch_i % print_interval == 0:
                         with writer.as_default():
@@ -275,7 +258,7 @@ class CycleGAN():
     def predict(self, force_original_aspect_ratio=False):
 
         assert (self.classifier is not None)
-        data_loader = DataLoader(img_res=(self.img_rows, self.img_cols), config=mura_config)
+        data_loader = DataLoader(config=mura_config)
 
         original, original_class = data_loader.load_single()
         x = tf.expand_dims(original, 0)
@@ -326,4 +309,4 @@ class CycleGAN():
         fig.savefig("predicted.png")
         plt.close()
 
-        return [pred_original, pred_translated, pred_reconstructed]
+        return [pred_original, pred_translated, pred_reconstructed], imgs

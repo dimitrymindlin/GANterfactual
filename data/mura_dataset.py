@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from data.mura_tfds import MuraImages
+from data.mura_tfds import MuraGANImages
 
 
 class MuraDataset():
@@ -9,7 +9,7 @@ class MuraDataset():
     def __init__(self, config):
         self.config = config
         (train, validation, test), info = tfds.load(
-            'MuraImages',
+            'MuraGANImages',
             split=['train[:80%]', 'train[80%:]', 'test'],
             shuffle_files=True,
             as_supervised=True,

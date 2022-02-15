@@ -1,22 +1,15 @@
 from __future__ import print_function, division
 
-import os
 import tensorflow as tf
 import numpy as np
 from data.mura_dataset import MuraDataset
 
 
 class DataLoader():
-    def __init__(self, img_res=(128, 128), config=None):
+    def __init__(self, config=None):
         self.config = config
         self.dataset = MuraDataset(config=config)
-        self.img_res = img_res
 
-        self.image_gen_config = {
-            "horizontal_flip": False,
-            "preprocessing_function": (lambda x: x / 127.5 - 1.),
-            "rescale": None,
-        }
 
     def load_batch(self):
         for pos, neg in zip(self.dataset.ds_train_pos, self.dataset.ds_train_neg):

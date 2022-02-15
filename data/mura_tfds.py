@@ -2,10 +2,9 @@
 
 import tensorflow_datasets as tfds
 import os
-import pandas as pd
 
 
-class MuraImages(tfds.core.GeneratorBasedBuilder):
+class MuraGANImages(tfds.core.GeneratorBasedBuilder):
     VERSION = tfds.core.Version('1.0.3')
     RELEASE_NOTES = {
         '1.0.3': 'Initial release.',
