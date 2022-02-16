@@ -19,8 +19,7 @@ class DataLoader():
     def load_single(self):
         self.dataset.ds_test.shuffle(self.dataset.ds_info.splits['test'].num_examples)
         samples = [(x, y) for x, y in self.dataset.ds_test.take(1)]
-        index = np.random.randint(0, 8)
-        return samples[0][0][index], samples[0][1][index]
+        return samples[0][0][0], samples[0][1][0]
 
     def save_single(self, x, path):
         # Rescale images 0 - 1
