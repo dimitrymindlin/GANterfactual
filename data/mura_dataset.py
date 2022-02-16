@@ -49,7 +49,8 @@ class MuraDataset():
     def _build_test_pipeline(self, ds):
         ds = ds.map(
             self.preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-        ds = ds.batch(self.config['test']['batch_size'])
+        ds = ds.shuffle(self.ds_info.splits['test'].num_examples)
+        ds = ds.batch(self.config['train']['batch_size'])
         ds = ds.prefetch(tf.data.AUTOTUNE)
         return ds
 

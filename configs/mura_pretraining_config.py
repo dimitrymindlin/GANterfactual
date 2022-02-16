@@ -10,8 +10,8 @@ mura_config = {
         "image_channel": 3,
     },
     "train": {
-        "train_base": True,
-        "augmentation": True,
+        "train_base": False,
+        "augmentation": False,
         "use_class_weights": True,
         "batch_size": 1,
         "epochs": 30,

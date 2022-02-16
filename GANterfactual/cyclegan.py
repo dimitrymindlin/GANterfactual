@@ -12,7 +12,6 @@ from GANterfactual.generator import build_generator
 import tensorflow as tf
 import os
 import numpy as np
-
 from GANterfactual.load_clf import load_classifier
 from configs.mura_pretraining_config import mura_config
 
@@ -172,11 +171,11 @@ class CycleGAN():
                 # P = class label 1, N = class label 0
                 fake_P = self.g_NP.predict(imgs_N)
                 fake_N = self.g_PN.predict(imgs_P)
-
+                # TODO: Measure discriminator accuray AND LOG
                 # Train the discriminators (original images = real / translated = Fake)
                 dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
                 dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
-                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake) # TODO: Why 0.5 here?
+                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)  # TODO: Why 0.5 here?
 
                 dP_loss_real = self.d_P.train_on_batch(imgs_P, valid)
                 dP_loss_fake = self.d_P.train_on_batch(fake_P, fake)
@@ -255,58 +254,42 @@ class CycleGAN():
         fig.savefig(f"{img_folder}/%d_%d.png" % (epoch, batch_i))
         plt.close()
 
-    def predict(self, force_original_aspect_ratio=False):
-
-        assert (self.classifier is not None)
+    def predict(self):
         data_loader = DataLoader(config=mura_config)
 
-        original, original_class = data_loader.load_single()
-        x = tf.expand_dims(original, 0)
-        # original = original.reshape(1, original.shape[0], original.shape[1], original.shape[2])
 
-        pred_original = self.classifier.predict(x)
-        classification = int(np.argmax(pred_original))
-        if classification == 0:
-            classification_label = "NEGATIVE"
-            print("PREDICTION -- NEGATIVE")
-            translated = self.g_NP.predict(x)
-            reconstructed = self.g_PN.predict(translated)
-        else:
-            classification_label = "POSITIVE"
-            print("PREDICTION -- POSITIVE")
-            translated = self.g_PN.predict(x)
-            reconstructed = self.g_NP.predict(translated)
+        for i in range(10):
+            original, original_class = data_loader.load_single()
+            x = original[np.newaxis, :, :, :]
 
-        pred_translated = self.classifier.predict(translated)
-        pred_reconstructed = self.classifier.predict(reconstructed)
+            if original_class == 0:
+                print("PREDICTION -- NEGATIVE")
+                translated = self.g_NP.predict(x)
+                reconstructed = self.g_PN.predict(translated)
+            else:
+                print("PREDICTION -- POSITIVE")
+                translated = self.g_PN.predict(x)
+                reconstructed = self.g_NP.predict(translated)
 
-        translated = translated[0]
-        reconstructed = reconstructed[0]
+            imgs = [x, translated, reconstructed]
+            classification = [['NEGATIVE', 'POSITIVE'][int(np.argmax(self.classifier.predict(x)))] for x in imgs]
 
-        # data_loader.save_single(translated, translated_out_path)
-        # data_loader.save_single(reconstructed, reconstructed_out_path)
-        imgs = [original, translated, reconstructed]
+            gen_imgs = np.concatenate(imgs)
+            gen_imgs = 0.5 * gen_imgs + 0.5
 
-        # gen_imgs = np.concatenate(imgs)
-        gen_imgs = imgs
-        correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE'] if int(original_class) == 0 else ['POSITIVE',
-                                                                                                        'NEGATIVE',
-                                                                                                        'POSITIVE']
+            correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE'] if int(original_class) == 0 else ['POSITIVE',
+                                                                                                            'NEGATIVE',
+                                                                                                            'POSITIVE']
 
-        # Rescale images 0 - 1
-        # gen_imgs = 0.5 * gen_imgs + 0.5
-
-        c = 3
-        titles = ['Original', 'Translated', 'Reconstructed']
-        fig, axs = plt.subplots(1, c, figsize=(15, 5))
-        cnt = 0
-        for j in range(c):
-            axs[j].imshow(gen_imgs[cnt], cmap='gray')
-            axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification_label})')
-            axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
-            axs[j].axis('off')
-            cnt += 1
-        fig.savefig("predicted.png")
+            c = 3
+            titles = ['Original', 'Translated', 'Reconstructed']
+            fig, axs = plt.subplots(1, c, figsize=(15, 5))
+            cnt = 0
+            for j in range(c):
+                axs[j].imshow(gen_imgs[cnt], cmap='gray')
+                axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification[cnt]})')
+                axs[j].axis('off')
+                cnt += 1
+            fig.savefig(f"predicted_{i}.png")
         plt.close()
 
-        return [pred_original, pred_translated, pred_reconstructed], imgs
