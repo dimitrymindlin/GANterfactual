@@ -19,7 +19,10 @@ gan_config = {
         "cycle_consistency_loss_weight": 1,
         "classifier_weight": 1,
         "counterfactual_loss_weight": 1,
-        "clf_ckpt": "mura_inception/best",
+        "clf_ckpt": "2022-02-22--19.30",
         "leaky_relu": False
+    },
+    "test": {
+        "batch_size": 32,
     }
 }

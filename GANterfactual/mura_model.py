@@ -3,6 +3,7 @@
 
 # external
 import tensorflow as tf
+from tensorflow import keras
 import tensorflow_addons as tfa
 from utils.model_utils import get_model_by_name, get_input_shape_from_config, get_preprocessing_by_name
 
@@ -66,3 +67,28 @@ def get_finetuning_model_from_pretrained_model(model):
     x = tf.keras.layers.Dense(1, activation='sigmoid')(x)
     model = tf.keras.Model(inputs=model.layers[0].input, outputs=x)
     return model
+
+def get_working_mura_model():
+    base_model = keras.applications.InceptionV3(
+        input_shape=(224, 224, 3),
+        include_top=False)  # Do not include the ImageNet classifier at the top
+
+    # Create a new model on top
+    input_image = keras.layers.Input((224, 224, 3))
+    x = tf.keras.applications.inception_v3.preprocess_input(input_image)  # Normalisation to [0,1]
+    x = base_model(x)
+
+    # Convert features of shape `base_model.output_shape[1:]` to vectors
+    x = keras.layers.GlobalAveragePooling2D()(x)  ##### <-
+    # x=keras.layers.Flatten()(x)
+
+    x = keras.layers.Dense(1024)(x)  ###
+    x = keras.layers.Activation(activation='relu')(x)  ###
+    x = keras.layers.Dropout(0.5)(x)  ###
+    x = keras.layers.Dense(256)(x)
+    x = keras.layers.Activation(activation='relu')(x)
+    x = keras.layers.Dropout(0.5)(x)
+    x = keras.layers.Dense(2)(x)
+    out = keras.layers.Activation(activation='softmax')(x)
+
+    return keras.Model(inputs=input_image, outputs=out)
