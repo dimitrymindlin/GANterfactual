@@ -10,6 +10,7 @@ dependencies:
   - pip
   - scikit-learn
   - scikit-image
+  - albumentations
   - pip:
     - tensorflow-macos==2.6.0
     - tensorflow-metal

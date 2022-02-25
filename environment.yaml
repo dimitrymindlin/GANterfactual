@@ -9,6 +9,7 @@ dependencies:
   - scikit-learn
   - scikit-image
   - pip
+  - albumentations
   - pip:
     - tensorflow-datasets==4.4.0
     - tensorflow-addons[tensorflow]

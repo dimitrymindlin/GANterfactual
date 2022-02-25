@@ -4,9 +4,9 @@ mura_config = {
     },
     "data": {
         "class_names": ["positive"],
-        "input_size": (320, 320),
-        "image_height": 320,
-        "image_width": 320,
+        "input_size": (224, 224),
+        "image_height": 224,
+        "image_width": 224,
         "image_channel": 3,
     },
     "train": {
@@ -26,7 +26,7 @@ mura_config = {
         "F1_threshold": 0.5,
     },
     "model": {
-        "name": "densenet",
+        "name": "inception",
         "pretrained": True,
         "pooling": "max",
     }

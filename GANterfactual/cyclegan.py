@@ -25,12 +25,12 @@ class CycleGAN():
         self.img_cols = gan_config["data"]["image_width"]
         self.channels = gan_config["data"]["image_channel"]
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.wasserstein = gan_config["train"]["wasserstein"]
         self.gan_config = gan_config
         self.gan_config['train']['execution_id'] = execution_id
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
+        self.data_loader = DataLoader(config=mura_config)
 
         # Number of filters in the first layer of G and D
         self.gf = 32
@@ -89,6 +89,17 @@ class CycleGAN():
         # Save generators to disk
         self.g_NP.save(os.path.join(cyclegan_folder, 'generator_np.h5'))
         self.g_PN.save(os.path.join(cyclegan_folder, 'generator_pn.h5'))
+
+    def evaluate_clf(self):
+        self.classifier.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+                      loss='categorical_crossentropy',
+                      metrics=["accuracy", tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+        print("Evaluating clf...")
+        result = self.classifier.evaluate(
+            self.data_loader.clf_test_data,
+            batch_size=self.gan_config['test']['batch_size'])
+        print(self.classifier.metrics_names)
+        print("CLF evaluation", result)
 
     def build_combined(self, classifier_weight=None):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
@@ -152,7 +163,6 @@ class CycleGAN():
 
         batch_size = self.gan_config["train"]["batch_size"]
         epochs = self.gan_config["train"]["epochs"]
-        data_loader = DataLoader(config=mura_config)
 
         # Adversarial loss ground truths
         valid = np.ones((batch_size,) + self.disc_patch)
@@ -162,20 +172,20 @@ class CycleGAN():
         class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
-            for batch_i, (imgs_N, imgs_P) in enumerate(data_loader.load_batch()):
+            # Positive (abnormal) = class label 1, Negative (normal) = class label 0
+            for batch_i, (imgs_N, imgs_P) in enumerate(self.data_loader.load_batch()):
                 # ----------------------
                 #  Train Discriminators
                 # ----------------------
 
                 # Translate images to opposite domain
-                # P = class label 1, N = class label 0
+                # Positive (abnormal) = class label 1, Negative (normal) = class label 0
                 fake_P = self.g_NP.predict(imgs_N)
                 fake_N = self.g_PN.predict(imgs_P)
-                # TODO: Measure discriminator accuray AND LOG
                 # Train the discriminators (original images = real / translated = Fake)
                 dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
                 dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
-                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)  # TODO: Why 0.5 here?
+                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)
 
                 dP_loss_real = self.d_P.train_on_batch(imgs_P, valid)
                 dP_loss_fake = self.d_P.train_on_batch(fake_P, fake)
@@ -201,10 +211,10 @@ class CycleGAN():
                             tf.summary.scalar('D_loss', tf.reduce_sum(d_loss[0]), step=epoch)
                             # the accuracy of a counterfactual image generator is the percentage of
                             # counterfactuals that actually changed the classifier’s prediction
-                            tf.summary.scalar('acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
+                            tf.summary.scalar('D_acc', tf.reduce_sum(100 * d_loss[1]), step=epoch)
                             tf.summary.scalar('G_loss', tf.reduce_sum(g_loss[0]), step=epoch)
                             # cycle consistency loss
-                            tf.summary.scalar('adv', tf.reduce_sum(np.mean(g_loss[1:3])), step=epoch)
+                            tf.summary.scalar('Cycle_consistency', tf.reduce_sum(np.mean(g_loss[1:3])), step=epoch)
                             tf.summary.scalar('classifier_N', tf.reduce_sum(g_loss[3]), step=epoch)
                             tf.summary.scalar('classifier_P', tf.reduce_sum(g_loss[4]), step=epoch)
                             tf.summary.scalar('recon', tf.reduce_sum(np.mean(g_loss[5:7])), step=epoch)
@@ -254,11 +264,11 @@ class CycleGAN():
         fig.savefig(f"{img_folder}/%d_%d.png" % (epoch, batch_i))
         plt.close()
 
-    def predict(self):
+    def predict(self, save_pics=False):
         data_loader = DataLoader(config=mura_config)
 
-
-        for i in range(10):
+        image_list = []
+        for i in range(5):
             original, original_class = data_loader.load_single()
             x = original[np.newaxis, :, :, :]
 
@@ -276,20 +286,21 @@ class CycleGAN():
 
             gen_imgs = np.concatenate(imgs)
             gen_imgs = 0.5 * gen_imgs + 0.5
+            image_list.append(gen_imgs)
+            if save_pics:
+                correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE'] if int(original_class) == 0 else [
+                    'POSITIVE',
+                    'NEGATIVE',
+                    'POSITIVE']
 
-            correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE'] if int(original_class) == 0 else ['POSITIVE',
-                                                                                                            'NEGATIVE',
-                                                                                                            'POSITIVE']
-
-            c = 3
-            titles = ['Original', 'Translated', 'Reconstructed']
-            fig, axs = plt.subplots(1, c, figsize=(15, 5))
-            cnt = 0
-            for j in range(c):
-                axs[j].imshow(gen_imgs[cnt], cmap='gray')
-                axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification[cnt]})')
-                axs[j].axis('off')
-                cnt += 1
-            fig.savefig(f"predicted_{i}.png")
-        plt.close()
-
+                c = 3
+                titles = ['Original', 'Translated', 'Reconstructed']
+                fig, axs = plt.subplots(1, c, figsize=(15, 5))
+                cnt = 0
+                for j in range(c):
+                    axs[j].imshow(gen_imgs[cnt], cmap='gray')
+                    axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification[cnt]})')
+                    axs[j].axis('off')
+                    cnt += 1
+                fig.savefig(f"predicted_{i}.png")
+        return image_list
