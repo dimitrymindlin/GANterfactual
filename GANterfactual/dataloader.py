@@ -58,6 +58,7 @@ class Gan_data_generator(Sequence):
         neg = []
         for i, batch in enumerate(batches):
             for file in batch:
+                print(file)
                 img = imread(file)
                 img = self.t(image=img)["image"]
                 if len(img.shape) < 3:
