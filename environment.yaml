@@ -10,6 +10,7 @@ dependencies:
   - scikit-image
   - pip
   - albumentations
+  - opencv
   - pip:
     - tensorflow-datasets==4.4.0
     - tensorflow-addons[tensorflow]
