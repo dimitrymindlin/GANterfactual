@@ -52,7 +52,7 @@ class Gan_data_generator(Sequence):
 
     def __getitem__(self, idx):
         batch_pos = self.pos_image_paths[idx * self.batch_size: (idx + 1) * self.batch_size]
-        batch_neg = self.neg_image_paths[idx * self.batch_size: (idx + 1) % len(self.neg_image_paths) * self.batch_size % len(self.neg_image_paths)]
+        batch_neg = self.neg_image_paths[(idx * self.batch_size) % len(self.neg_image_paths): ((idx + 1) * self.batch_size) % len(self.neg_image_paths)]
         batches = [batch_neg, batch_pos]
         pos = []
         neg = []
