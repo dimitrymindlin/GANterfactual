@@ -19,7 +19,7 @@ class DataLoader():
         self.train_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data()
 
     def load_batch(self):
-        for pos, neg in self.train_dataloader:
+        for neg, pos in self.train_dataloader:
             # pos = class label 1, neg = class label 0
             yield neg, pos  # "NORMAL, ABNORMAL"
 
@@ -51,8 +51,8 @@ class Gan_data_generator(Sequence):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
 
     def __getitem__(self, idx):
-        batch_pos = self.pos_image_paths[idx * self.batch_size: (idx + 1) * self.batch_size]
-        batch_neg = self.neg_image_paths[(idx * self.batch_size) % len(self.neg_image_paths): ((idx + 1) * self.batch_size) % len(self.neg_image_paths)]
+        batch_pos = self.pos_image_paths[(idx * self.batch_size) % len(self.neg_image_paths): ((idx + 1) * self.batch_size) % len(self.neg_image_paths)]
+        batch_neg = self.neg_image_paths[idx * self.batch_size: (idx + 1) * self.batch_size]
         batches = [batch_neg, batch_pos]
         pos = []
         neg = []
