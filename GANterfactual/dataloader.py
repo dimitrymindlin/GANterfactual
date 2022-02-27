@@ -20,7 +20,7 @@ class DataLoader():
 
     def load_batch(self):
         max_iterations = max(len(self.train_dataloader.pos_image_paths), len(self.train_dataloader.neg_image_paths))
-        for neg, pos, _ in zip(self.train_dataloader, range(max_iterations)):
+        for (neg, pos), _ in zip(self.train_dataloader, range(max_iterations)):
             # pos = class label 1, neg = class label 0
             yield neg, pos  # "NORMAL, ABNORMAL"
 
