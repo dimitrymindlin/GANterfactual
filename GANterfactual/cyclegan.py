@@ -180,7 +180,7 @@ class CycleGAN():
 
                 # Translate images to opposite domain
                 # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-                print(imgs_N.shape, imgs_P.shape)
+                #print(imgs_N.shape, imgs_P.shape)
                 fake_P = self.g_NP.predict(imgs_N)
                 fake_N = self.g_PN.predict(imgs_P)
                 # Train the discriminators (original images = real / translated = Fake)
