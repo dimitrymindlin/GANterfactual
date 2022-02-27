@@ -15,7 +15,7 @@ from keras.utils.all_utils import Sequence
 class DataLoader():
     def __init__(self, config=None):
         self.config = config
-        #self.dataset = MuraDataset(config=config)
+        # self.dataset = MuraDataset(config=config)
         self.train_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data()
 
     def load_batch(self):
@@ -51,8 +51,9 @@ class Gan_data_generator(Sequence):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
 
     def __getitem__(self, idx):
-        batch_pos = self.pos_image_paths[(idx * self.batch_size) % len(self.neg_image_paths): ((idx + 1) * self.batch_size) % len(self.neg_image_paths)]
-        batch_neg = self.neg_image_paths[idx * self.batch_size: (idx + 1) * self.batch_size]
+        # TODO: ONLY FOR BATCH SIZE OF 1
+        batch_neg = self.neg_image_paths[idx]
+        batch_pos = self.pos_image_paths[idx % 3986]
         batches = [batch_neg, batch_pos]
         pos = []
         neg = []
@@ -65,13 +66,14 @@ class Gan_data_generator(Sequence):
                 if img.shape[-1] != 3:
                     img = tf.image.grayscale_to_rgb(img)
                 img = tf.image.resize_with_pad(img, 224, 224)
-                if i == 1:
-                    pos.append(img / 127.5 - 1.)
-                else:
+                if i == 0:
                     neg.append(img / 127.5 - 1.)
+                else:
+                    pos.append(img / 127.5 - 1.)
         neg = tf.stack(neg)
         pos = tf.stack(pos)
         return neg, pos
+
 
 class CLFDataGenerator(Sequence):
     def __init__(self, image_filenames, labels, batch_size, transform):
@@ -101,17 +103,18 @@ class CLFDataGenerator(Sequence):
         y = np.array(batch_y)
         return x, y
 
+
 def get_mura_data():
     # To get the filenames for a task
     def filenames(part, train=True):
         root = '../tensorflow_datasets/downloads/cjinny_mura-v11/'
-        #root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
+        # root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
         if train:
             csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
-            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
+            # csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
         else:
             csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
-            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
+            # csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
 
         with open(csv_path, 'rb') as F:
             d = F.readlines()
@@ -150,8 +153,8 @@ def get_mura_data():
     imgs, labels = filenames(part=part)  # train data
     vimgs, vlabels = filenames(part=part, train=False)  # validation data
 
-    #training_data = labels.count('positive') + labels.count('negative')
-    #validation_data = vlabels.count('positive') + vlabels.count('negative')
+    # training_data = labels.count('positive') + labels.count('negative')
+    # validation_data = vlabels.count('positive') + vlabels.count('negative')
 
     y_data = [0 if x == 'negative' else 1 for x in labels]
     y_data = keras.utils.to_categorical(y_data)
