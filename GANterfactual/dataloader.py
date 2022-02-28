@@ -20,7 +20,8 @@ class DataLoader():
 
     def load_batch(self):
         max_iterations = max(len(self.train_dataloader.pos_image_paths), len(self.train_dataloader.neg_image_paths))
-        for (neg, pos), _ in zip(self.train_dataloader, range(max_iterations)):
+        #print(max_iterations)
+        for (neg, pos), i in zip(self.train_dataloader, range(max_iterations)):
             # pos = class label 1, neg = class label 0
             yield neg, pos  # "NORMAL, ABNORMAL"
 
@@ -53,8 +54,9 @@ class Gan_data_generator(Sequence):
 
     def __getitem__(self, idx):
         # TODO: ONLY FOR BATCH SIZE OF 1
-        batch_neg = [self.neg_image_paths[idx]]
-        batch_pos = [self.pos_image_paths[idx % 3986]]
+        print(f"IDX: {idx}")
+        batch_neg = [self.neg_image_paths[idx % len(self.neg_image_paths)]]
+        batch_pos = [self.pos_image_paths[idx % len(self.pos_image_paths)]]
         batches = [batch_neg, batch_pos]
         pos = []
         neg = []
@@ -109,13 +111,13 @@ def get_mura_data():
     # To get the filenames for a task
     def filenames(part, train=True):
         root = '../tensorflow_datasets/downloads/cjinny_mura-v11/'
-        # root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
+        #root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
         if train:
             csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
-            # csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
+            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
         else:
             csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
-            # csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
+            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
 
         with open(csv_path, 'rb') as F:
             d = F.readlines()
