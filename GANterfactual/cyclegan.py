@@ -156,7 +156,7 @@ class CycleGAN():
                                             self.lambda_cycle, self.lambda_cycle],
                               optimizer=optimizer)
 
-    def train(self, print_interval=100, sample_interval=1000):
+    def train(self, print_interval=500, sample_interval=2000):
         config_matrix = [[k, str(w)] for k, w in self.gan_config["train"].items()]
         with writer.as_default():
             tf.summary.text("config", tf.convert_to_tensor(config_matrix), step=0)
@@ -175,25 +175,25 @@ class CycleGAN():
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
             for batch_i, (imgs_N, imgs_P) in enumerate(self.data_loader.load_batch()):
                 # ----------------------
-                #  Train Discriminators
+                #  Train Discriminators every second batch
                 # ----------------------
 
                 # Translate images to opposite domain
                 # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-                #print(imgs_N.shape, imgs_P.shape)
-                fake_P = self.g_NP.predict(imgs_N)
-                fake_N = self.g_PN.predict(imgs_P)
-                # Train the discriminators (original images = real / translated = Fake)
-                dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
-                dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
-                dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)
+                if batch_i % 2 == 0:
+                    fake_P = self.g_NP.predict(imgs_N)
+                    fake_N = self.g_PN.predict(imgs_P)
+                    # Train the discriminators (original images = real / translated = Fake)
+                    dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
+                    dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
+                    dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)
 
-                dP_loss_real = self.d_P.train_on_batch(imgs_P, valid)
-                dP_loss_fake = self.d_P.train_on_batch(fake_P, fake)
-                dP_loss = 0.5 * np.add(dP_loss_real, dP_loss_fake)
+                    dP_loss_real = self.d_P.train_on_batch(imgs_P, valid)
+                    dP_loss_fake = self.d_P.train_on_batch(fake_P, fake)
+                    dP_loss = 0.5 * np.add(dP_loss_real, dP_loss_fake)
 
-                # Total disciminator loss
-                d_loss = 0.5 * np.add(dN_loss, dP_loss)
+                    # Total disciminator loss
+                    d_loss = 0.5 * np.add(dN_loss, dP_loss)
 
                 # ------------------
                 #  Train Generators
@@ -204,8 +204,6 @@ class CycleGAN():
                                                       [valid, valid,
                                                        class_N, class_P,
                                                        imgs_N, imgs_P])
-
-                print(f"Batch {batch_i} done.")
 
                 # Tensorboard logging
                 if self.classifier is not None:
@@ -221,7 +219,7 @@ class CycleGAN():
                             tf.summary.scalar('classifier_N', tf.reduce_sum(g_loss[3]), step=epoch)
                             tf.summary.scalar('classifier_P', tf.reduce_sum(g_loss[4]), step=epoch)
                             tf.summary.scalar('recon', tf.reduce_sum(np.mean(g_loss[5:7])), step=epoch)
-                            tf.summary.scalar('id', tf.reduce_sum(g_loss[7:9]), step=epoch)
+                            #tf.summary.scalar('id', tf.reduce_sum(g_loss[7:9]), step=epoch)
 
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
