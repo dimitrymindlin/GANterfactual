@@ -20,7 +20,8 @@ gan_config = {
         "classifier_weight": 1,
         "counterfactual_loss_weight": 1,
         "clf_ckpt": "2022-02-25--10.22",
-        "leaky_relu": True
+        "leaky_relu": True,
+        "generator": "resnet"
     },
     "test": {
         "batch_size": 32,

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from GANterfactual.dataloader import DataLoader
 from GANterfactual.discriminator import build_discriminator
-from GANterfactual.generator import build_generator
+from GANterfactual.generator import build_generator, ResnetGenerator
 import tensorflow as tf
 import os
 import numpy as np
@@ -53,8 +53,12 @@ class CycleGAN():
         self.d_P = build_discriminator(self.img_shape, self.df)
 
         # Build the generators
-        self.g_NP = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
-        self.g_PN = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
+        if self.gan_config["train"]["generator"] == "unet":
+            self.g_NP = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
+            self.g_PN = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
+        else:
+            self.g_NP = ResnetGenerator(self.img_shape, self.channels)
+            self.g_PN = ResnetGenerator(self.img_shape, self.channels)
 
         self.build_combined(classifier_weight)
 
