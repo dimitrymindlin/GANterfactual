@@ -180,10 +180,10 @@ class CycleGAN():
 
                 # Translate images to opposite domain
                 # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-                if batch_i % 2 == 0:
+                if batch_i % 4 == 0:
                     fake_P = self.g_NP.predict(imgs_N)
                     fake_N = self.g_PN.predict(imgs_P)
-                    # Train the discriminators (original images = real / translated = Fake)
+                    # Train the discriminators (original images = real (valid) / translated = Fake)
                     dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
                     dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
                     dN_loss = 0.5 * np.add(dN_loss_real, dN_loss_fake)
