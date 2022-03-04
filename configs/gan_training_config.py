@@ -4,9 +4,9 @@ gan_config = {
     },
     "data": {
         "class_names": ["positive"],
-        "input_size": (224, 224),
-        "image_height": 224,
-        "image_width": 224,
+        "input_size": (512, 512),
+        "image_height": 512,
+        "image_width": 512,
         "image_channel": 3,
     },
     "train": {
@@ -17,13 +17,14 @@ gan_config = {
         "epochs": 20,
         "beta1": 0.5,
         "cycle_consistency_loss_weight": 1,
-        "classifier_weight": 1,
+        "identity_loss_weight": 1,
         "counterfactual_loss_weight": 1,
-        "clf_ckpt": "2022-02-25--10.22",
+        "clf_ckpt": "2022-03-04--16.16",
         "leaky_relu": True,
-        "generator": "resnet"
+        "generator": "unet",
+        "generator_training_multiplier": 2
     },
     "test": {
-        "batch_size": 32,
+        "batch_size": 10,
     }
 }
