@@ -22,7 +22,7 @@ gan_config = {
         "clf_ckpt": "2022-03-04--16.16",
         "leaky_relu": True,
         "generator": "unet",
-        "generator_training_multiplier": 2
+        "generator_training_multiplier": 1
     },
     "test": {
         "batch_size": 10,
