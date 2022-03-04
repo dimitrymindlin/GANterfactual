@@ -12,7 +12,7 @@ from GANterfactual.generator import build_generator, ResnetGenerator
 import tensorflow as tf
 import os
 import numpy as np
-from GANterfactual.load_clf import load_classifier
+from GANterfactual.load_clf import load_classifier, load_classifier_complete
 from configs.mura_pretraining_config import mura_config
 
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
@@ -38,7 +38,7 @@ class CycleGAN():
 
         # Loss weights
         self.lambda_cycle = self.gan_config["train"]["cycle_consistency_loss_weight"]  # Cycle-consistency loss
-        self.lambda_id = 0.1 * self.lambda_cycle  # Identity loss
+        self.lambda_id = self.gan_config["train"]["identity_loss_weight"]
 
         self.d_N = None
         self.d_P = None
@@ -47,7 +47,7 @@ class CycleGAN():
         self.combined = None
         self.classifier = None
 
-    def construct(self, load_clf=True, classifier_weight=None):
+    def construct(self, load_clf=True, classifier_weight=1):
         # Build the discriminators
         self.d_N = build_discriminator(self.img_shape, self.df)
         self.d_P = build_discriminator(self.img_shape, self.df)
@@ -57,8 +57,8 @@ class CycleGAN():
             self.g_NP = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
             self.g_PN = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
         else:
-            self.g_NP = ResnetGenerator(self.img_shape, self.channels)
-            self.g_PN = ResnetGenerator(self.img_shape, self.channels)
+            self.g_NP = ResnetGenerator(self.img_shape, self.channels, self.gf)
+            self.g_PN = ResnetGenerator(self.img_shape, self.channels, self.gf)
 
         self.build_combined(classifier_weight)
 
@@ -95,17 +95,15 @@ class CycleGAN():
         self.g_PN.save(os.path.join(cyclegan_folder, 'generator_pn.h5'))
 
     def evaluate_clf(self):
-        self.classifier.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+        """self.classifier.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
                       loss='categorical_crossentropy',
-                      metrics=["accuracy", tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+                      metrics=["accuracy", tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])"""
         print("Evaluating clf...")
-        result = self.classifier.evaluate(
-            self.data_loader.clf_test_data,
-            batch_size=self.gan_config['test']['batch_size'])
-        print(self.classifier.metrics_names)
-        print("CLF evaluation", result)
+        result = self.classifier.evaluate(self.data_loader.clf_test_data)
+        for metric, value in zip(self.classifier.metrics_names, result):
+            print(metric, ": ", value)
 
-    def build_combined(self, classifier_weight=None):
+    def build_combined(self, counterfactual_loss_weight=None):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
                          self.gan_config["train"]["beta1"])
 
@@ -125,8 +123,8 @@ class CycleGAN():
         fake_N = self.g_PN(img_P)
 
         # Identity mapping of images
-        # img_N_id = self.g_PN(img_N)
-        # img_P_id = self.g_NP(img_P)
+        img_N_id = self.g_PN(img_N)
+        img_P_id = self.g_NP(img_P)
 
         # For the combined model we will only train the generators
         self.d_N.trainable = False
@@ -137,27 +135,31 @@ class CycleGAN():
         valid_P = self.d_P(fake_P)
 
         # Counterfactual loss
-        self.classifier = load_classifier(self.gan_config)
+        #self.classifier = load_classifier(self.gan_config)
+        self.classifier = load_classifier_complete(self.gan_config)
         self.classifier._name = "classifier"
         self.classifier.trainable = False
-        class_N_loss = self.classifier(fake_N)
-        class_P_loss = self.classifier(fake_P)
+        counter_loss_N = self.classifier(fake_N)
+        counter_loss_P = self.classifier(fake_P)
 
         # Cycle-loss - Translate images back to original domain
-        reconstr_N = self.g_PN(fake_P)
-        reconstr_P = self.g_NP(fake_N)
+        cycle_N = self.g_PN(fake_P)
+        cycle_P = self.g_NP(fake_N)
 
         # Combined model trains generators to fool discriminators
         self.combined = Model(inputs=[img_N, img_P],
                               outputs=[valid_N, valid_P,
-                                       class_N_loss, class_P_loss,
-                                       reconstr_N, reconstr_P])
+                                       counter_loss_N, counter_loss_P,
+                                       cycle_N, cycle_P,
+                                       img_N_id, img_P_id])
         self.combined.compile(loss=['mse', 'mse',
                                     'mse', 'mse',
+                                    'mae', 'mae',
                                     'mae', 'mae'],
                               loss_weights=[1, 1,
-                                            classifier_weight, classifier_weight,
-                                            self.lambda_cycle, self.lambda_cycle],
+                                            counterfactual_loss_weight, counterfactual_loss_weight,
+                                            self.lambda_cycle, self.lambda_cycle,
+                                            self.lambda_id, self.lambda_id],
                               optimizer=optimizer)
 
     def train(self, print_interval=500, sample_interval=2000):
@@ -184,7 +186,7 @@ class CycleGAN():
 
                 # Translate images to opposite domain
                 # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-                if batch_i % 4 == 0:
+                if batch_i % self.gan_config["train"]["generator_training_multiplier"] == 0:
                     fake_P = self.g_NP.predict(imgs_N)
                     fake_N = self.g_PN.predict(imgs_P)
                     # Train the discriminators (original images = real (valid) / translated = Fake)
@@ -207,6 +209,7 @@ class CycleGAN():
                 g_loss = self.combined.train_on_batch([imgs_N, imgs_P],
                                                       [valid, valid,
                                                        class_N, class_P,
+                                                       imgs_N, imgs_P,
                                                        imgs_N, imgs_P])
 
                 # Tensorboard logging

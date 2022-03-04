@@ -6,6 +6,7 @@ import tensorflow.keras as keras
 import tensorflow_addons as tfa
 import tensorflow as tf
 
+
 def build_generator(img_shape, gf, channels, leaky_relu=False):
     """U-Net Generator"""
 
@@ -13,7 +14,8 @@ def build_generator(img_shape, gf, channels, leaky_relu=False):
         """Layers used during downsampling"""
         d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
         if not leaky_relu:
-            d = ReLU()(d) # TODO: Try Normal Relu https://machinelearningmastery.com/how-to-train-stable-generative-adversarial-networks/
+            d = ReLU()(
+                d)  # TODO: Try Normal Relu https://machinelearningmastery.com/how-to-train-stable-generative-adversarial-networks/
         else:
             d = LeakyReLU(alpha=0.3)(d)
         d = InstanceNormalization()(d)
@@ -47,6 +49,7 @@ def build_generator(img_shape, gf, channels, leaky_relu=False):
 
     return Model(d0, output_img)
 
+
 def _get_norm_layer(norm):
     if norm == 'none':
         return lambda: lambda x: x
@@ -58,11 +61,7 @@ def _get_norm_layer(norm):
         return keras.layers.LayerNormalization
 
 
-def ResnetGenerator(input_shape=(256, 256, 3),
-                    output_channels=3,
-                    dim=64,
-                    n_downsamplings=2,
-                    n_blocks=9,
+def ResnetGenerator(input_shape=(256, 256, 3), output_channels=3, dim=64, n_downsamplings=2, n_blocks=9,
                     norm='instance_norm'):
     Norm = _get_norm_layer(norm)
 
