@@ -4,9 +4,9 @@ mura_config = {
     },
     "data": {
         "class_names": ["positive"],
-        "input_size": (224, 224),
-        "image_height": 224,
-        "image_width": 224,
+        "input_size": (512, 512),
+        "image_height": 512,
+        "image_width": 512,
         "image_channel": 3,
     },
     "train": {
@@ -28,6 +28,6 @@ mura_config = {
     "model": {
         "name": "inception",
         "pretrained": True,
-        "pooling": "max",
+        "pooling": "avg",
     }
 }
