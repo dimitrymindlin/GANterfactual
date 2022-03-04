@@ -17,9 +17,9 @@ class MuraDataset():
             with_info=True,
         )
         self.ds_info = info
-        self.ds_train = self._build_train_pipeline(train)
         self.ds_train_pos = self._build_pos_train_pipeline(train)
         self.ds_train_neg = self._build_neg_train_pipeline(train)
+        self.ds_train = self._build_train_pipeline(train)
         self.ds_val = self._build_test_pipeline(validation)
         self.ds_test = self._build_test_pipeline(test)
 
@@ -48,7 +48,7 @@ class MuraDataset():
 
     def _build_test_pipeline(self, ds):
         ds = ds.map(
-            self.preprocess, num_parallel_calls=tf.data.AUTOTUNE)
+            self.preprocess_test, num_parallel_calls=tf.data.AUTOTUNE)
         ds = ds.shuffle(self.ds_info.splits['test'].num_examples)
         ds = ds.batch(self.config['train']['batch_size'])
         ds = ds.prefetch(tf.data.AUTOTUNE)
@@ -58,6 +58,14 @@ class MuraDataset():
         height = self.config['data']['image_height']
         width = self.config['data']['image_width']
         image = tf.image.resize_with_pad(image, height, width)
+        return tf.cast(image, tf.float32) / 127.5 - 1., label  # normalize pixel values between -1 and 1
+
+    def preprocess_test(self, image, label):
+        height = self.config['data']['image_height']
+        width = self.config['data']['image_width']
+        image = tf.image.resize_with_pad(image, height, width)
+        label = tf.one_hot(tf.cast(label, tf.int32), 2)
+        label = tf.cast(label, tf.float32)
         return tf.cast(image, tf.float32) / 127.5 - 1., label  # normalize pixel values between -1 and 1
 
     def benchmark(self):
