@@ -13,7 +13,7 @@ for arg in sys.argv:
 
 if __name__ == '__main__':
     gan = CycleGAN(gan_config)
-    gan.construct(classifier_weight=gan_config["train"]["counterfactual_loss_weight"])
+    gan.construct()
     gan.evaluate_clf()
     gan.train()
     #gan.save(os.path.join('..', 'models', 'GANterfactual'))

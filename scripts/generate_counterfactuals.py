@@ -6,8 +6,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 gan = CycleGAN(gan_config)
-gan.load_existing(cyclegan_folder="../checkpoints/GAN",
-                  classifier_weight=gan_config['train']['classifier_weight'])
+gan.load_existing(cyclegan_folder="../checkpoints/GAN")
 
 image_list = gan.predict()
 

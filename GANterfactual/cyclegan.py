@@ -47,7 +47,7 @@ class CycleGAN():
         self.combined = None
         self.classifier = None
 
-    def construct(self, load_clf=True):
+    def construct(self):
         # Build the discriminators
         self.d_N = build_discriminator(self.img_shape, self.df)
         self.d_P = build_discriminator(self.img_shape, self.df)
