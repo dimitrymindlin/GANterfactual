@@ -1,28 +1,24 @@
 from __future__ import print_function, division
 
-import tensorflow as tf
-import numpy as np
-from data.mura_dataset import MuraDataset
 from tensorflow import keras
 import tensorflow as tf
-import cv2
 from skimage.io import imread
 from sklearn.utils import shuffle
 import numpy as np
 from keras.utils.all_utils import Sequence
 
-
 class DataLoader():
     def __init__(self, config=None):
         self.config = config
-        # self.dataset = MuraDataset(config=config)
-        self.train_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data()
+        self.img_height = config["data"]["image_height"]
+        self.img_width = config["data"]["image_width"]
+        self.train_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data(self.img_height, self.img_width)
+
 
     def load_batch(self):
         max_iterations = max(len(self.train_dataloader.pos_image_paths), len(self.train_dataloader.neg_image_paths))
-        #print(max_iterations)
         for (neg, pos), i in zip(self.train_dataloader, range(max_iterations)):
-            # pos = class label 1, neg = class label 0
+            # neg = class label 0 = normal, pos = class label 1 = abnormal
             yield neg, pos  # "NORMAL, ABNORMAL"
 
     def load_single(self):
@@ -39,7 +35,7 @@ class DataLoader():
 
 class Gan_data_generator(Sequence):
 
-    def __init__(self, image_filenames, labels, batch_size, transform):
+    def __init__(self, image_filenames, labels, batch_size, img_height, img_width):
         self.image_filenames = image_filenames
         self.labels = labels
         self.batch_size = batch_size
@@ -47,7 +43,8 @@ class Gan_data_generator(Sequence):
                                 "positive" in filename]
         self.neg_image_paths = [filename for filename in image_filenames if
                                 "negative" in filename]
-        self.t = transform
+        self.img_height = img_height
+        self.img_width = img_width
 
     def __len__(self):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
@@ -63,12 +60,11 @@ class Gan_data_generator(Sequence):
         for i, batch in enumerate(batches):
             for file in batch:
                 img = imread(file)
-                img = self.t(image=img)["image"]
                 if len(img.shape) < 3:
                     img = tf.expand_dims(img, axis=-1)
                 if img.shape[-1] != 3:
                     img = tf.image.grayscale_to_rgb(img)
-                img = tf.image.resize_with_pad(img, 224, 224)
+                img = tf.image.resize_with_pad(img, self.img_height, self.img_width)
                 if i == 0:
                     neg.append(img / 127.5 - 1.)
                 else:
@@ -79,11 +75,12 @@ class Gan_data_generator(Sequence):
 
 
 class CLFDataGenerator(Sequence):
-    def __init__(self, image_filenames, labels, batch_size, transform):
+    def __init__(self, image_filenames, labels, batch_size, img_height=None, img_width=None):
         self.image_filenames = image_filenames
         self.labels = labels
-        self.batch_size = batch_size
-        self.t = transform
+        self.batch_size = 32
+        self.img_height = img_height
+        self.img_width = img_width
 
     def __len__(self):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
@@ -94,12 +91,11 @@ class CLFDataGenerator(Sequence):
         x = []
         for file in batch_x:
             img = imread(file)
-            img = self.t(image=img)["image"]
             if len(img.shape) < 3:
                 img = tf.expand_dims(img, axis=-1)
             if img.shape[-1] != 3:
                 img = tf.image.grayscale_to_rgb(img)
-            img = tf.image.resize_with_pad(img, 224, 224)
+            img = tf.image.resize_with_pad(img, self.img_height, self.img_width)
             img = tf.cast(img, tf.float32) / 127.5 - 1.
             x.append(img)
         x = tf.stack(x)
@@ -107,17 +103,17 @@ class CLFDataGenerator(Sequence):
         return x, y
 
 
-def get_mura_data():
+def get_mura_data(img_height, img_width):
     # To get the filenames for a task
     def filenames(part, train=True):
-        root = '../tensorflow_datasets/downloads/cjinny_mura-v11/'
-        #root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
+        #root = '../tensorflow_datasets/downloads/cjinny_mura-v11/'
+        root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
         if train:
-            csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
-            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
+            #csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
+            csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
         else:
-            csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
-            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
+            #csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
+            csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
 
         with open(csv_path, 'rb') as F:
             d = F.readlines()
@@ -130,27 +126,6 @@ def get_mura_data():
         # imgs= [x.replace("/", "\\") for x in imgs]
         labels = [x.split('_')[-1].split('/')[0] for x in imgs]
         return imgs, labels
-
-    from albumentations import (
-        Compose, HorizontalFlip, CLAHE, HueSaturationValue,
-        RandomBrightness, RandomContrast, RandomGamma,
-        ToFloat, ShiftScaleRotate
-    )
-
-    AUGMENTATIONS_TRAIN = Compose([
-        HorizontalFlip(p=0.5),
-        RandomContrast(limit=0.2, p=0.5),
-        RandomGamma(gamma_limit=(80, 120), p=0.5),
-        RandomBrightness(limit=0.2, p=0.5),
-        ShiftScaleRotate(
-            shift_limit=0.0625, scale_limit=0.1,
-            rotate_limit=15, border_mode=cv2.BORDER_REFLECT_101, p=0.8),
-        ToFloat(max_value=255)
-    ])
-    AUGMENTATIONS_TEST = Compose([
-        # CLAHE(p=1.0, clip_limit=2.0),
-        ToFloat(max_value=255)
-    ])
 
     part = 'XR_WRIST'  # part to work with
     imgs, labels = filenames(part=part)  # train data
@@ -166,8 +141,8 @@ def get_mura_data():
 
     batch_size = 1
     imgs, y_data = shuffle(imgs, y_data)
-    training_batch_generator = Gan_data_generator(imgs, y_data, batch_size, AUGMENTATIONS_TRAIN)
-    validation_batch_generator = Gan_data_generator(vimgs, y_data_valid, batch_size, AUGMENTATIONS_TEST)
-    clf_test_data_generator = CLFDataGenerator(vimgs, y_data_valid, batch_size, AUGMENTATIONS_TEST)
+    training_batch_generator = Gan_data_generator(imgs, y_data, batch_size, img_height, img_width)
+    validation_batch_generator = Gan_data_generator(vimgs, y_data_valid, batch_size, img_height, img_width)
+    clf_test_data_generator = CLFDataGenerator(vimgs, y_data_valid, batch_size, img_height, img_width)
 
     return training_batch_generator, validation_batch_generator, clf_test_data_generator
