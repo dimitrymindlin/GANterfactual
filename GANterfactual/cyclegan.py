@@ -47,7 +47,7 @@ class CycleGAN():
         self.combined = None
         self.classifier = None
 
-    def construct(self, load_clf=True, classifier_weight=1):
+    def construct(self, load_clf=True):
         # Build the discriminators
         self.d_N = build_discriminator(self.img_shape, self.df)
         self.d_P = build_discriminator(self.img_shape, self.df)
@@ -60,9 +60,9 @@ class CycleGAN():
             self.g_NP = ResnetGenerator(self.img_shape, self.channels, self.gf)
             self.g_PN = ResnetGenerator(self.img_shape, self.channels, self.gf)
 
-        self.build_combined(classifier_weight)
+        self.build_combined(self.gan_config["train"]["counterfactual_loss_weight"])
 
-    def load_existing(self, cyclegan_folder, load_clf=True, classifier_weight=None):
+    def load_existing(self, cyclegan_folder, load_clf=True):
         custom_objects = {"InstanceNormalization": InstanceNormalization}
 
         # Load discriminators from disk
@@ -81,7 +81,7 @@ class CycleGAN():
                                                custom_objects=custom_objects)
         self.g_PN._name = "g_PN"
 
-        self.build_combined(classifier_weight)
+        self.build_combined(self.gan_config["train"]["counterfactual_loss_weight"])
 
     def save(self, cyclegan_folder):
         os.makedirs(cyclegan_folder, exist_ok=True)
@@ -103,7 +103,7 @@ class CycleGAN():
         for metric, value in zip(self.classifier.metrics_names, result):
             print(metric, ": ", value)
 
-    def build_combined(self, counterfactual_loss_weight=None):
+    def build_combined(self, counterfactual_loss_weight=1):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
                          self.gan_config["train"]["beta1"])
 
