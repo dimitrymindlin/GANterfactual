@@ -37,8 +37,9 @@ class CycleGAN():
         self.df = 64
 
         # Loss weights
-        self.lambda_cycle = self.gan_config["train"]["cycle_consistency_loss_weight"]  # Cycle-consistency loss
+        self.lambda_cycle = self.gan_config["train"]["cycle_consistency_loss_weight"]
         self.lambda_id = self.gan_config["train"]["identity_loss_weight"]
+        self.lambda_counterfactual = self.gan_config["train"]["counterfactual_loss_weight"]
 
         self.d_N = None
         self.d_P = None
@@ -60,7 +61,7 @@ class CycleGAN():
             self.g_NP = ResnetGenerator(self.img_shape, self.channels, self.gf)
             self.g_PN = ResnetGenerator(self.img_shape, self.channels, self.gf)
 
-        self.build_combined(self.gan_config["train"]["counterfactual_loss_weight"])
+        self.build_combined()
 
     def load_existing(self, cyclegan_folder, load_clf=True):
         custom_objects = {"InstanceNormalization": InstanceNormalization}
@@ -81,7 +82,7 @@ class CycleGAN():
                                                custom_objects=custom_objects)
         self.g_PN._name = "g_PN"
 
-        self.build_combined(self.gan_config["train"]["counterfactual_loss_weight"])
+        self.build_combined()
 
     def save(self, cyclegan_folder):
         os.makedirs(cyclegan_folder, exist_ok=True)
@@ -103,7 +104,7 @@ class CycleGAN():
         for metric, value in zip(self.classifier.metrics_names, result):
             print(metric, ": ", value)
 
-    def build_combined(self, counterfactual_loss_weight=1):
+    def build_combined(self):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
                          self.gan_config["train"]["beta1"])
 
@@ -157,7 +158,7 @@ class CycleGAN():
                                     'mae', 'mae',
                                     'mae', 'mae'],
                               loss_weights=[1, 1,
-                                            counterfactual_loss_weight, counterfactual_loss_weight,
+                                            self.lambda_counterfactual, self.lambda_counterfactual,
                                             self.lambda_cycle, self.lambda_cycle,
                                             self.lambda_id, self.lambda_id],
                               optimizer=optimizer)
@@ -174,8 +175,8 @@ class CycleGAN():
         valid = np.ones((batch_size,) + self.disc_patch)
         fake = np.zeros((batch_size,) + self.disc_patch)
 
-        class_P = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
-        class_N = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
+        class_N = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
+        class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
@@ -226,7 +227,7 @@ class CycleGAN():
                             tf.summary.scalar('classifier_N', tf.reduce_sum(g_loss[3]), step=epoch)
                             tf.summary.scalar('classifier_P', tf.reduce_sum(g_loss[4]), step=epoch)
                             tf.summary.scalar('recon', tf.reduce_sum(np.mean(g_loss[5:7])), step=epoch)
-                            #tf.summary.scalar('id', tf.reduce_sum(g_loss[7:9]), step=epoch)
+                            tf.summary.scalar('id', tf.reduce_sum(g_loss[7:9]), step=epoch)
 
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
