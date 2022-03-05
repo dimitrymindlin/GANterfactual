@@ -14,7 +14,7 @@ gan_config = {
         "optimizer": "adam",
         "batch_size": 1,
         "learn_rate": 0.0002,
-        "epochs": 20,
+        "epochs": 15,
         "beta1": 0.5,
         "cycle_consistency_loss_weight": 1,
         "identity_loss_weight": 1,
