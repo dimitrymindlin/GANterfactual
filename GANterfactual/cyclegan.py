@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sklearn.metrics import confusion_matrix, classification_report
 from tensorflow.keras import Input
 from tensorflow_addons.layers import InstanceNormalization
 from tensorflow.keras.optimizers import Adam
@@ -163,7 +164,7 @@ class CycleGAN():
                                             self.lambda_id, self.lambda_id],
                               optimizer=optimizer)
 
-    def train(self, print_interval=500, sample_interval=2000):
+    def train(self, print_interval=100, sample_interval=300):
         config_matrix = [[k, str(w)] for k, w in self.gan_config["train"].items()]
         with writer.as_default():
             tf.summary.text("config", tf.convert_to_tensor(config_matrix), step=0)
@@ -175,8 +176,8 @@ class CycleGAN():
         valid = np.ones((batch_size,) + self.disc_patch)
         fake = np.zeros((batch_size,) + self.disc_patch)
 
-        class_N = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
-        class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
+        class_P = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
+        class_N = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
@@ -266,50 +267,67 @@ class CycleGAN():
         for i in range(r):
             for j in range(c):
                 axs[i, j].imshow(gen_imgs[cnt][:, :, 0], cmap='gray')
-                axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification[cnt]})')
-                axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
+                axs[i, j].set_title(f'{titles[j]} T: ({correct_classification[cnt]} | P: {classification[cnt]})')
+                #axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
                 axs[i, j].axis('off')
                 cnt += 1
         fig.savefig(f"{img_folder}/%d_%d.png" % (epoch, batch_i))
         plt.close()
 
     def predict(self, save_pics=False):
-        data_loader = DataLoader(config=mura_config)
-
+        img_folder = f"images_test"
+        os.makedirs(img_folder, exist_ok=True)
+        r, c = 2, 3
         image_list = []
-        for i in range(5):
-            original, original_class = data_loader.load_single()
-            x = original[np.newaxis, :, :, :]
+        for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
+            if img_num == 5:
+                break
+            # Translate images to the other domain
+            fake_P = self.g_NP.predict(img_N)
+            fake_N = self.g_PN.predict(img_P)
+            # Translate back to original domain
+            reconstr_N = self.g_PN.predict(fake_P)
+            reconstr_P = self.g_NP.predict(fake_N)
 
-            if original_class == 0:
-                print("PREDICTION -- NEGATIVE")
-                translated = self.g_NP.predict(x)
-                reconstructed = self.g_PN.predict(translated)
-            else:
-                print("PREDICTION -- POSITIVE")
-                translated = self.g_PN.predict(x)
-                reconstructed = self.g_NP.predict(translated)
-
-            imgs = [x, translated, reconstructed]
+            imgs = [img_N, fake_P, reconstr_N, img_P, fake_N, reconstr_P]
             classification = [['NEGATIVE', 'POSITIVE'][int(np.argmax(self.classifier.predict(x)))] for x in imgs]
 
             gen_imgs = np.concatenate(imgs)
+            correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE', 'POSITIVE', 'NEGATIVE', 'POSITIVE']
+
+            # Rescale images 0 - 1
             gen_imgs = 0.5 * gen_imgs + 0.5
             image_list.append(gen_imgs)
-            if save_pics:
-                correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE'] if int(original_class) == 0 else [
-                    'POSITIVE',
-                    'NEGATIVE',
-                    'POSITIVE']
 
-                c = 3
-                titles = ['Original', 'Translated', 'Reconstructed']
-                fig, axs = plt.subplots(1, c, figsize=(15, 5))
-                cnt = 0
+            titles = ['Original', 'Translated', 'Reconstructed']
+            fig, axs = plt.subplots(r, c, figsize=(15, 10))
+            cnt = 0
+            for i in range(r):
                 for j in range(c):
-                    axs[j].imshow(gen_imgs[cnt], cmap='gray')
-                    axs[j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification[cnt]})')
-                    axs[j].axis('off')
+                    axs[i, j].imshow(gen_imgs[cnt][:, :, 0], cmap='gray')
+                    axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]} | {classification[cnt]})')
+                    axs[i, j].axis('off')
                     cnt += 1
-                fig.savefig(f"predicted_{i}.png")
+            fig.savefig(f"{img_folder}/img_{img_num}")
+            plt.close()
         return image_list
+
+    def evaluate(self):
+        y_pred_np = []
+        y_pred_pn = []
+        for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
+            # Translate images to the other domain
+            fake_P = self.g_NP.predict(img_N)
+            fake_N = self.g_PN.predict(img_P)
+            y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
+            y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
+
+        print("NP Gan Model")
+        print(confusion_matrix([1]*len(y_pred_np), y_pred_np))
+        print(classification_report([1]*len(y_pred_np), y_pred_np))
+
+        print("PN Gan Model")
+        print(confusion_matrix([0] * len(y_pred_pn), y_pred_pn))
+        print(classification_report([0] * len(y_pred_pn), y_pred_pn))
+
+
