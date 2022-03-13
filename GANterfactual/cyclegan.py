@@ -176,8 +176,10 @@ class CycleGAN():
         valid = np.ones((batch_size,) + self.disc_patch)
         fake = np.zeros((batch_size,) + self.disc_patch)
 
-        class_P = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
-        class_N = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
+        # class_N (1, 0) = class_label 0
+        # class_P (0, 1) = class_label 1
+        class_N = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
+        class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
