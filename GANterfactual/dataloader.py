@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 
+from sklearn.model_selection import train_test_split
 from tensorflow import keras
 import tensorflow as tf
 from skimage.io import imread
@@ -12,7 +13,7 @@ class DataLoader():
         self.config = config
         self.img_height = config["data"]["image_height"]
         self.img_width = config["data"]["image_width"]
-        self.train_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data(self.img_height, self.img_width)
+        self.train_dataloader, self.valid_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data(self.img_height, self.img_width)
 
 
     def load_batch(self):
@@ -21,17 +22,14 @@ class DataLoader():
             # neg = class label 0 = normal, pos = class label 1 = abnormal
             yield neg, pos  # "NORMAL, ABNORMAL"
 
-    def load_single(self):
-        # TODO CHANGE TO METHOD that returns many samples of pos and neg
-        self.dataset.ds_test.shuffle(self.dataset.ds_info.splits['test'].num_examples)
-        samples = [(x, y) for x, y in self.dataset.ds_test.take(1)]
-        return samples[0][0][0], samples[0][1][0]
+    def load_test(self):
+        for neg, pos in self.test_dataloader:
+            yield neg, pos
 
     def save_single(self, x, path):
         # Rescale images 0 - 1
         x = 0.5 * x + 0.5
         tf.keras.preprocessing.image.save_img(path, x)
-
 
 class Gan_data_generator(Sequence):
 
@@ -51,7 +49,6 @@ class Gan_data_generator(Sequence):
 
     def __getitem__(self, idx):
         # TODO: ONLY FOR BATCH SIZE OF 1
-        print(f"IDX: {idx}")
         batch_neg = [self.neg_image_paths[idx % len(self.neg_image_paths)]]
         batch_pos = [self.pos_image_paths[idx % len(self.pos_image_paths)]]
         batches = [batch_neg, batch_pos]
@@ -72,7 +69,6 @@ class Gan_data_generator(Sequence):
         neg = tf.stack(neg)
         pos = tf.stack(pos)
         return neg, pos
-
 
 class CLFDataGenerator(Sequence):
     def __init__(self, image_filenames, labels, batch_size, img_height=None, img_width=None):
@@ -102,7 +98,6 @@ class CLFDataGenerator(Sequence):
         y = np.array(batch_y)
         return x, y
 
-
 def get_mura_data(img_height, img_width):
     # To get the filenames for a task
     def filenames(part, train=True):
@@ -128,21 +123,25 @@ def get_mura_data(img_height, img_width):
         return imgs, labels
 
     part = 'XR_WRIST'  # part to work with
-    imgs, labels = filenames(part=part)  # train data
-    vimgs, vlabels = filenames(part=part, train=False)  # validation data
+    train_x, train_y = filenames(part=part)  # train data
+    test_x, test_y = filenames(part=part, train=False)  # test data
+    train_x, valid_x, train_y, valid_y = train_test_split(train_x, train_y, test_size=0.2,
+                                                          random_state=42)  # split train and valid data
 
-    # training_data = labels.count('positive') + labels.count('negative')
-    # validation_data = vlabels.count('positive') + vlabels.count('negative')
-
-    y_data = [0 if x == 'negative' else 1 for x in labels]
-    y_data = keras.utils.to_categorical(y_data)
-    y_data_valid = [0 if x == 'negative' else 1 for x in vlabels]
-    y_data_valid = keras.utils.to_categorical(y_data_valid)
+    train_x, train_y = to_categorical(train_x, train_y)
+    valid_x, valid_y = to_categorical(valid_x, valid_y)
+    test_x, test_y = to_categorical(test_x, test_y)
 
     batch_size = 1
-    imgs, y_data = shuffle(imgs, y_data)
-    training_batch_generator = Gan_data_generator(imgs, y_data, batch_size, img_height, img_width)
-    validation_batch_generator = Gan_data_generator(vimgs, y_data_valid, batch_size, img_height, img_width)
-    clf_test_data_generator = CLFDataGenerator(vimgs, y_data_valid, batch_size, img_height, img_width)
+    train_batch_generator = Gan_data_generator(train_x, train_y, batch_size, img_height, img_width)
+    valid_batch_generator = Gan_data_generator(valid_x, valid_y, batch_size, img_height, img_width)
+    test_batch_generator = Gan_data_generator(valid_x, valid_y, batch_size, img_height, img_width)
+    clf_test_data_generator = CLFDataGenerator(test_x, test_y, batch_size, img_height, img_width)
 
-    return training_batch_generator, validation_batch_generator, clf_test_data_generator
+    return train_batch_generator, valid_batch_generator, test_batch_generator, clf_test_data_generator
+
+def to_categorical(x, y):
+    y = [0 if x == 'negative' else 1 for x in y]
+    y = keras.utils.to_categorical(y)
+    x, y = shuffle(x, y)
+    return x, y

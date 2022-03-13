@@ -319,10 +319,11 @@ class CycleGAN():
         y_pred_pn = []
         for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
             # Translate images to the other domain
-            fake_P = self.g_NP.predict(img_N)
-            fake_N = self.g_PN.predict(img_P)
-            y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
-            y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
+            for k in range(3):
+                fake_P = self.g_NP.predict(img_N)
+                fake_N = self.g_PN.predict(img_P)
+                y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
+                y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
 
         print("NP Gan Model")
         print(confusion_matrix([1]*len(y_pred_np), y_pred_np))

@@ -11,9 +11,11 @@ for arg in sys.argv:
     if arg == "--counterfactual":
         gan_config["train"]["counterfactual_loss_weight"] = 10
 
+
 if __name__ == '__main__':
     gan = CycleGAN(gan_config)
     gan.construct()
     #gan.evaluate_clf()
     gan.train()
+    gan.evaluate()
     #gan.save(os.path.join('..', 'models', 'GANterfactual'))
