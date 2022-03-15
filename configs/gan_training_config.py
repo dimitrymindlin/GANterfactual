@@ -19,7 +19,7 @@ gan_config = {
         "cycle_consistency_loss_weight": 1,
         "identity_loss_weight": 1,
         "counterfactual_loss_weight": 10,
-        "clf_ckpt": "2022-03-13--21.03",
+        "clf_ckpt": "2022-03-14--22.35",
         "leaky_relu": True,
         "generator": "unet",
         "generator_training_multiplier": 1
