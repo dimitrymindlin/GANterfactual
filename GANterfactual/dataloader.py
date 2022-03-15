@@ -8,13 +8,14 @@ from sklearn.utils import shuffle
 import numpy as np
 from keras.utils.all_utils import Sequence
 
+
 class DataLoader():
     def __init__(self, config=None):
         self.config = config
         self.img_height = config["data"]["image_height"]
         self.img_width = config["data"]["image_width"]
-        self.train_dataloader, self.valid_dataloader, self.test_dataloader, self.clf_test_data = get_mura_data(self.img_height, self.img_width)
-
+        self.train_dataloader, self.valid_dataloader, self.test_dataloader, self.clf_test_data, self.test_y = get_mura_data(
+            self.img_height, self.img_width)
 
     def load_batch(self):
         max_iterations = max(len(self.train_dataloader.pos_image_paths), len(self.train_dataloader.neg_image_paths))
@@ -30,6 +31,7 @@ class DataLoader():
         # Rescale images 0 - 1
         x = 0.5 * x + 0.5
         tf.keras.preprocessing.image.save_img(path, x)
+
 
 class Gan_data_generator(Sequence):
 
@@ -70,6 +72,7 @@ class Gan_data_generator(Sequence):
         pos = tf.stack(pos)
         return neg, pos
 
+
 class CLFDataGenerator(Sequence):
     def __init__(self, image_filenames, labels, batch_size, img_height=None, img_width=None):
         self.image_filenames = image_filenames
@@ -97,6 +100,7 @@ class CLFDataGenerator(Sequence):
         x = tf.stack(x)
         y = np.array(batch_y)
         return x, y
+
 
 def get_mura_data(img_height, img_width):
     # To get the filenames for a task
@@ -138,7 +142,8 @@ def get_mura_data(img_height, img_width):
     test_batch_generator = Gan_data_generator(valid_x, valid_y, batch_size, img_height, img_width)
     clf_test_data_generator = CLFDataGenerator(test_x, test_y, batch_size, img_height, img_width)
 
-    return train_batch_generator, valid_batch_generator, test_batch_generator, clf_test_data_generator
+    return train_batch_generator, valid_batch_generator, test_batch_generator, clf_test_data_generator, test_y
+
 
 def to_categorical(x, y):
     y = [0 if x == 'negative' else 1 for x in y]
