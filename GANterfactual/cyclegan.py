@@ -15,7 +15,7 @@ import os
 import numpy as np
 from GANterfactual.load_clf import load_classifier, load_classifier_complete
 from configs.mura_pretraining_config import mura_config
-
+import tensorflow_addons as tfa
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
 
@@ -105,6 +105,15 @@ class CycleGAN():
         for metric, value in zip(self.classifier.metrics_names, result):
             print(metric, ": ", value)
 
+        m = tfa.metrics.CohenKappa(num_classes=2, sparse_labels=False)
+        y_pred = self.classifier.predict(self.data_loader.clf_test_data)
+
+        yp2 = np.argmax(y_pred, axis=1)
+        ya2 = np.argmax(self.data_loader.test_y, axis=1)
+        print(y_pred.shape, self.data_loader.test_y.shape)
+        m.update_state(ya2, yp2)
+        print('Kappa score result: ', m.result().numpy())
+
     def build_combined(self):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
                          self.gan_config["train"]["beta1"])
@@ -141,6 +150,7 @@ class CycleGAN():
         self.classifier = load_classifier_complete(self.gan_config)
         self.classifier._name = "classifier"
         self.classifier.trainable = False
+        print(self.classifier.summary())
         counter_loss_N = self.classifier(fake_N)
         counter_loss_P = self.classifier(fake_P)
 
