@@ -19,7 +19,7 @@ def load_classifier(gan_config):
 
 
 def load_classifier_complete(gan_config):
-    print("Loading Pretrained Model ...")
+    print(f"Loading Pretrained Model ... checkpoints/{gan_config['train']['clf_ckpt']}/model")
     metric_f1 = tfa.metrics.F1Score(num_classes=2, threshold=0.5, average='macro')
     model = tf.keras.models.load_model(f"checkpoints/{gan_config['train']['clf_ckpt']}/model", custom_objects={'f1_score': metric_f1})
     print("Model Loaded.")

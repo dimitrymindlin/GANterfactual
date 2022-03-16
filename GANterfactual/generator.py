@@ -7,7 +7,7 @@ import tensorflow_addons as tfa
 import tensorflow as tf
 
 
-def build_generator(img_shape, gf, channels, leaky_relu=False):
+def build_generator(img_shape, gf, channels, leaky_relu=False, skip_connections=True):
     """U-Net Generator"""
 
     def conv2d(layer_input, filters, f_size=4):
@@ -28,7 +28,8 @@ def build_generator(img_shape, gf, channels, leaky_relu=False):
         if dropout_rate:
             u = Dropout(dropout_rate)(u)
         u = InstanceNormalization()(u)
-        u = Concatenate()([u, skip_input])
+        if skip_connections:
+            u = Concatenate()([u, skip_input])
         return u
 
     # Image input

@@ -14,7 +14,7 @@ for arg in sys.argv:
     if arg == "--resnet":
         gan_config["train"]["generator"] = "resnet"
     if arg == "--no_skip_connections":
-        pass
+        gan_config["train"]["skip_connections"] = False
 
 if __name__ == '__main__':
     gan = CycleGAN(gan_config)

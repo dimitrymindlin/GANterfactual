@@ -56,8 +56,10 @@ class CycleGAN():
 
         # Build the generators
         if self.gan_config["train"]["generator"] == "unet":
-            self.g_NP = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
-            self.g_PN = build_generator(self.img_shape, self.gf, self.channels, self.gan_config['train']['leaky_relu'])
+            use_leaky_relu = self.gan_config['train']['leaky_relu']
+            use_skip_connections = self.gan_config['train']['skip_connections']
+            self.g_NP = build_generator(self.img_shape, self.gf, self.channels, use_leaky_relu, use_skip_connections)
+            self.g_PN = build_generator(self.img_shape, self.gf, self.channels, use_leaky_relu, use_skip_connections)
         else:
             self.g_NP = ResnetGenerator(self.img_shape, self.channels, self.gf)
             self.g_PN = ResnetGenerator(self.img_shape, self.channels, self.gf)
