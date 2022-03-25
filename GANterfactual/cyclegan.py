@@ -41,6 +41,7 @@ class CycleGAN():
         self.lambda_cycle = self.gan_config["train"]["cycle_consistency_loss_weight"]
         self.lambda_id = self.gan_config["train"]["identity_loss_weight"]
         self.lambda_counterfactual = self.gan_config["train"]["counterfactual_loss_weight"]
+        self.lambda_discriminator = self.gan_config["train"]["discriminator_loss_weight"]
 
         self.d_N = None
         self.d_P = None
@@ -116,6 +117,12 @@ class CycleGAN():
         m.update_state(ya2, yp2)
         print('Kappa score result: ', m.result().numpy())
 
+        vy_data2 = np.argmax(self.data_loader.test_y, axis=1)
+        cm = confusion_matrix(vy_data2, yp2)
+        print(cm)
+
+        print(classification_report(vy_data2, yp2))
+
     def build_combined(self):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
                          self.gan_config["train"]["beta1"])
@@ -170,7 +177,7 @@ class CycleGAN():
                                     'mse', 'mse',
                                     'mae', 'mae',
                                     'mae', 'mae'],
-                              loss_weights=[1, 1,
+                              loss_weights=[self.lambda_discriminator, self.lambda_discriminator,
                                             self.lambda_counterfactual, self.lambda_counterfactual,
                                             self.lambda_cycle, self.lambda_cycle,
                                             self.lambda_id, self.lambda_id],
