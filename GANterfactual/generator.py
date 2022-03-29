@@ -10,15 +10,18 @@ import tensorflow as tf
 def build_generator(img_shape, gf, channels, leaky_relu=False, skip_connections=True):
     """U-Net Generator"""
 
-    def conv2d(layer_input, filters, f_size=4):
+    def conv2d(layer_input, filters, f_size=4, last=False):
         """Layers used during downsampling"""
         d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
+        if last:
+            d = ReLU()(d)
+            return d
         if not leaky_relu:
             d = ReLU()(
                 d)  # TODO: Try Normal Relu https://machinelearningmastery.com/how-to-train-stable-generative-adversarial-networks/
         else:
-            d = LeakyReLU(alpha=0.3)(d)
-        d = InstanceNormalization()(d)
+            d = LeakyReLU(alpha=0.2)(d)
+        d = InstanceNormalization()(d, training=True) # https://machinelearningmastery.com/how-to-implement-pix2pix-gan-models-from-scratch-with-keras/
         return d
 
     def deconv2d(layer_input, skip_input, filters, f_size=4, dropout_rate=0):
@@ -38,7 +41,7 @@ def build_generator(img_shape, gf, channels, leaky_relu=False, skip_connections=
     d1 = conv2d(d0, gf)
     d2 = conv2d(d1, gf * 2)
     d3 = conv2d(d2, gf * 4)
-    d4 = conv2d(d3, gf * 8)
+    d4 = conv2d(d3, gf * 8, last=True)
 
     # Upsampling
     u1 = deconv2d(d4, d3, gf * 4)
