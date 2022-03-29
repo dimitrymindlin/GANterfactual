@@ -7,10 +7,14 @@ import sys
 for arg in sys.argv:
     if arg == "--cycle_consistency":
         gan_config["train"]["cycle_consistency_loss_weight"] = 5
+    if arg == "--cycle_consistency_original":
+        gan_config["train"]["cycle_consistency_loss_weight"] = 10
     if arg == "--counterfactual":
         gan_config["train"]["counterfactual_loss_weight"] = 5
     if arg == "--discriminator":
         gan_config["train"]["discriminator_loss_weight"] = 5
+    if arg == "--discriminator_max":
+        gan_config["train"]["discriminator_loss_weight"] = 10
     if arg == "--times_generator":
         gan_config["train"]["generator_training_multiplier"] = 3
     if arg == "--resnet":
