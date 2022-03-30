@@ -16,6 +16,9 @@ import numpy as np
 from GANterfactual.load_clf import load_classifier, load_classifier_complete
 from configs.mura_pretraining_config import mura_config
 import tensorflow_addons as tfa
+
+from utils.activation_maps import generate_img_attention
+
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
 
@@ -138,9 +141,13 @@ class CycleGAN():
         img_N = Input(shape=self.img_shape)
         img_P = Input(shape=self.img_shape)
 
+        # Attention Map from CLF
+        img_NA = generate_img_attention(self.classifier, img_N)
+        img_PA = generate_img_attention(self.classifier, img_P)
+
         # Translate images to the other domain
-        fake_P = self.g_NP(img_N)
-        fake_N = self.g_PN(img_P)
+        fake_P = self.g_NP(img_NA)
+        fake_N = self.g_PN(img_PA)
 
         # Identity mapping of images
         img_N_id = self.g_PN(img_N)
@@ -167,7 +174,7 @@ class CycleGAN():
         cycle_P = self.g_NP(fake_N)
 
         # Combined model trains generators to fool discriminators
-        self.combined = Model(inputs=[img_N, img_P],
+        self.combined = Model(inputs=[img_NA, img_PA],
                               outputs=[valid_N, valid_P,
                                        counter_loss_N, counter_loss_P,
                                        cycle_N, cycle_P,
