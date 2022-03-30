@@ -159,7 +159,6 @@ class CycleGAN():
         self.classifier = load_classifier_complete(self.gan_config)
         self.classifier._name = "classifier"
         self.classifier.trainable = False
-        print(self.classifier.summary())
         counter_loss_N = self.classifier(fake_N)
         counter_loss_P = self.classifier(fake_P)
 
@@ -338,7 +337,7 @@ class CycleGAN():
         y_pred_pn = []
         for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
             # Translate images to the other domain
-            for k in range(3):
+            for k in range(2):
                 fake_P = self.g_NP.predict(img_N)
                 fake_N = self.g_PN.predict(img_P)
                 y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
@@ -352,4 +351,27 @@ class CycleGAN():
         print(confusion_matrix([0] * len(y_pred_pn), y_pred_pn))
         print(classification_report([0] * len(y_pred_pn), y_pred_pn))
 
+    def evaluate_oracle_score(self, oracle):
+        y_pred_np = []
+        y_pred_pn = []
+        y_pred_np_oracle = []
+        y_pred_pn_oracle = []
+        for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
+            # Translate images to the other domain
+            for k in range(2):
+                fake_P = self.g_NP.predict(img_N)
+                fake_N = self.g_PN.predict(img_P)
+                # Predict images
+                y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
+                y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
+                y_pred_np_oracle.append(int(np.argmax(oracle.predict(0.5 * fake_P + 0.5))))
+                y_pred_pn_oracle.append(int(np.argmax(oracle.predict(0.5 * fake_N + 0.5))))
+
+        similar_pred_count = sum(x == y == 1 for x, y in zip(y_pred_np, y_pred_np_oracle))
+        oracle_score_np = 1 / len(y_pred_np) * similar_pred_count
+        print(f"Score for NP: {oracle_score_np}")
+
+        similar_pred_count = sum(x == y == 0 for x, y in zip(y_pred_pn, y_pred_pn_oracle))
+        oracle_score_pn = 1 / len(y_pred_pn) * similar_pred_count
+        print(f"Score for PN: {oracle_score_pn}")
 
