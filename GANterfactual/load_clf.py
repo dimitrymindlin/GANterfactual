@@ -2,9 +2,8 @@ from __future__ import print_function, division
 from GANterfactual.mura_model import WristPredictNet
 from configs.mura_pretraining_config import mura_config
 import tensorflow as tf
-import tensorflow_addons as tfa
 
-M1_WEIGHTS_PATH = "../checkpoints/2022-02-25--10.22/cp.ckpt"
+M1_WEIGHTS_PATH = "../checkpoints/2022-03-24--12.42/model"
 
 
 def load_classifier(gan_config):
@@ -20,7 +19,6 @@ def load_classifier(gan_config):
 
 def load_classifier_complete(gan_config):
     print(f"Loading Pretrained Model ... checkpoints/{gan_config['train']['clf_ckpt']}/model")
-    metric_f1 = tfa.metrics.F1Score(num_classes=2, threshold=0.5, average='macro')
-    model = tf.keras.models.load_model(f"checkpoints/{gan_config['train']['clf_ckpt']}/model", custom_objects={'f1_score': metric_f1})
+    model = tf.keras.models.load_model(f"checkpoints/{gan_config['train']['clf_ckpt']}/model", compile=False)
     print("Model Loaded.")
     return model
