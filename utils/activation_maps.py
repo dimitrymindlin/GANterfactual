@@ -1,49 +1,13 @@
 import tensorflow as tf
 import cv2
-import numpy as np
 from albumentations import Compose, CLAHE
 from tensorflow.keras.models import Model
-from skimage.color import gray2rgb
 
 AUGMENTATIONS_TEST = Compose([
     CLAHE(always_apply=True)
 ])
 
-def resize_with_pad(im):
-  desired_size = 512
-  old_size = im.shape[:2] # old_size is in (height, width) format
-
-  ratio = float(desired_size)/max(old_size)
-  new_size = tuple([int(x*ratio) for x in old_size])
-
-  # new_size should be in (width, height) format
-
-  im = cv2.resize(im, (new_size[1], new_size[0]))
-
-  delta_w = desired_size - new_size[1]
-  delta_h = desired_size - new_size[0]
-  top, bottom = delta_h//2, delta_h-(delta_h//2)
-  left, right = delta_w//2, delta_w-(delta_w//2)
-
-  color = [0, 0, 0]
-  return cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT,
-      value=color)
-
-def preprocess(img):
-    """
-    Loading and preprocessing of the image
-    """
-    img = AUGMENTATIONS_TEST(image=img)["image"]
-    if len(img.shape) < 3:
-        img = tf.expand_dims(img, axis=-1)
-    if img.shape[-1] != 3:
-        img = tf.image.grayscale_to_rgb(img)
-    img = tf.image.resize_with_pad(img, 512, 512)
-    image_batch = tf.expand_dims(img, axis=0)
-    return tf.keras.applications.inception_v3.preprocess_input(image_batch)
-
-
-def get_activations_at(input_image, model):
+def get_activations_at(model, img):
     """
     Get the activations of the model in layer i. The last conv layer is usually used, but it applies to any.
     """
@@ -67,7 +31,7 @@ def get_activations_at(input_image, model):
     submodel = Model(inputs=model.inputs, outputs=out_layer.output)
 
     # return the activations
-    return submodel.predict(input_image)
+    return submodel(img)
 
 
 def postprocess_activations(activations):
@@ -76,22 +40,24 @@ def postprocess_activations(activations):
     """
 
     # using the approach in https://arxiv.org/abs/1612.03928
-    output = np.abs(activations)
-    output = np.sum(output, axis=-1).squeeze()
+    output = tf.math.abs(activations)
+    output = tf.squeeze(tf.math.reduce_sum(output, axis=-1))
 
     # resize and convert to image
-    output = cv2.resize(output, (512, 512))
-    output /= output.max()
-    output *= 255
-    return 255 - output.astype('uint8')
+    output = tf.image.resize_with_pad(output, 512, 512)
+    output = tf.math.divide(output, tf.math.reduce_max(output))
+    output = tf.math.multiply(output, 255)
+    return tf.math.subtract(tf.cast(255, tf.uint8), tf.cast(output, tf.uint8))
 
 
 def apply_heatmap2(weights, img):
     """
     Combine the initial image with the image of the activations to generate the attention heatmap.
     """
-    combined = gray2rgb(weights * img)
-    return combined / 127.5 - 1. # 3 channel image [-1, 1]
+    weights = tf.cast(weights, tf.float32)
+    normalized_weights = tf.keras.applications.inception_v3.preprocess_input(weights) # put [0,255] to [-1,1]
+    combined = tf.math.multiply(normalized_weights, img)
+    return combined # should have [-1,1] and (None, 512, 512, 3)
     """plt.imshow(weights)
     plt.show()
     plt.imshow(combined, cmap='gray')
@@ -105,18 +71,7 @@ def generate_img_attention(model, img):
     """
     Flow to get the attention map.
     """
-
-    input_image = preprocess(img)
-    resized_img = resize_with_pad(img)
-    activations = get_activations_at(input_image, model)
+    activations = get_activations_at(model, img)
     weights = postprocess_activations(activations)
-    apply_heatmap2(weights, resized_img)
+    return apply_heatmap2(weights, img)
 
-
-"""root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid/XR_WRIST/'
-
-classifier_folder = f"../checkpoints/2022-03-24--12.42/model"
-classifier = tf.keras.models.load_model(classifier_folder, compile=False)
-img = imread(root + "patient11186/study2_positive/image1.png")
-generate_img_attention(classifier, img)
-"""
