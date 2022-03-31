@@ -278,9 +278,13 @@ class CycleGAN():
         img_N = testN[np.newaxis, :, :, :]
         img_P = testP[np.newaxis, :, :, :]
 
+        # Attention Map from CLF
+        img_NA = generate_img_attention(self.classifier, img_N)
+        img_PA = generate_img_attention(self.classifier, img_P)
+
         # Translate images to the other domain
-        fake_P = self.g_NP.predict(img_N)
-        fake_N = self.g_PN.predict(img_P)
+        fake_P = self.g_NP.predict(img_NA)
+        fake_N = self.g_PN.predict(img_PA)
         # Translate back to original domain
         reconstr_N = self.g_PN.predict(fake_P)
         reconstr_P = self.g_NP.predict(fake_N)
