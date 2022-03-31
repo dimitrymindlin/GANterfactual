@@ -137,6 +137,11 @@ class CycleGAN():
                          optimizer=optimizer,
                          metrics=['accuracy'])
 
+        self.classifier = load_classifier_complete(self.gan_config)
+        self.classifier._name = "classifier"
+        self.classifier.trainable = False
+
+
         # Input images from both domains
         img_N = Input(shape=self.img_shape)
         img_P = Input(shape=self.img_shape)
@@ -145,7 +150,7 @@ class CycleGAN():
         img_NA = generate_img_attention(self.classifier, img_N)
         img_PA = generate_img_attention(self.classifier, img_P)
 
-        # Translate images to the other domain
+        # Translate attention images to the other domain
         fake_P = self.g_NP(img_NA)
         fake_N = self.g_PN(img_PA)
 
@@ -163,9 +168,6 @@ class CycleGAN():
 
         # Counterfactual loss
         #self.classifier = load_classifier(self.gan_config)
-        self.classifier = load_classifier_complete(self.gan_config)
-        self.classifier._name = "classifier"
-        self.classifier.trainable = False
         counter_loss_N = self.classifier(fake_N)
         counter_loss_P = self.classifier(fake_P)
 
@@ -174,7 +176,7 @@ class CycleGAN():
         cycle_P = self.g_NP(fake_N)
 
         # Combined model trains generators to fool discriminators
-        self.combined = Model(inputs=[img_NA, img_PA],
+        self.combined = Model(inputs=[img_N, img_P],
                               outputs=[valid_N, valid_P,
                                        counter_loss_N, counter_loss_P,
                                        cycle_N, cycle_P,
@@ -213,11 +215,15 @@ class CycleGAN():
                 #  Train Discriminators every second batch
                 # ----------------------
 
-                # Translate images to opposite domain
+
                 # Positive (abnormal) = class label 1, Negative (normal) = class label 0
                 if batch_i % self.gan_config["train"]["generator_training_multiplier"] == 0:
-                    fake_P = self.g_NP.predict(imgs_N)
-                    fake_N = self.g_PN.predict(imgs_P)
+                    # Attention Map from CLF
+                    imgs_NA = generate_img_attention(self.classifier, imgs_N)
+                    imgs_PA = generate_img_attention(self.classifier, imgs_P)
+                    # Translate images to opposite domain
+                    fake_P = self.g_NP.predict(imgs_NA)
+                    fake_N = self.g_PN.predict(imgs_PA)
                     # Train the discriminators (original images = real (valid) / translated = Fake)
                     dN_loss_real = self.d_N.train_on_batch(imgs_N, valid)
                     dN_loss_fake = self.d_N.train_on_batch(fake_N, fake)
