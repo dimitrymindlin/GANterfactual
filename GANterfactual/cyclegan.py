@@ -17,7 +17,7 @@ from GANterfactual.load_clf import load_classifier, load_classifier_complete
 from configs.mura_pretraining_config import mura_config
 import tensorflow_addons as tfa
 
-from utils.activation_maps import generate_img_attention
+from utils.attention_maps import generate_img_attention
 
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)

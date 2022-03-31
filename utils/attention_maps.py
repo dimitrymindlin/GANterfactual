@@ -44,18 +44,20 @@ def postprocess_activations(activations):
     output = tf.squeeze(tf.math.reduce_sum(output, axis=-1))
 
     # resize and convert to image
+    output = tf.expand_dims(output, axis=-1)
     output = tf.image.resize_with_pad(output, 512, 512)
     output = tf.math.divide(output, tf.math.reduce_max(output))
     output = tf.math.multiply(output, 255)
-    return tf.math.subtract(tf.cast(255, tf.uint8), tf.cast(output, tf.uint8))
+    return tf.math.subtract(tf.cast(255, tf.float32), tf.cast(output, tf.float32))
 
 
 def apply_heatmap2(weights, img):
     """
     Combine the initial image with the image of the activations to generate the attention heatmap.
     """
-    weights = tf.cast(weights, tf.float32)
-    normalized_weights = tf.keras.applications.inception_v3.preprocess_input(weights) # put [0,255] to [-1,1]
+    weights = tf.image.grayscale_to_rgb(weights) #3 channels
+    weights = tf.expand_dims(weights, axis=0) #batch
+    normalized_weights = tf.keras.applications.inception_v3.preprocess_input(weights) # put values [0,255] to [-1,1]
     combined = tf.math.multiply(normalized_weights, img)
     return combined # should have [-1,1] and (None, 512, 512, 3)
     """plt.imshow(weights)
