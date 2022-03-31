@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 
+from albumentations import Compose, CLAHE
 from sklearn.model_selection import train_test_split
 from tensorflow import keras
 import tensorflow as tf
@@ -8,6 +9,9 @@ from sklearn.utils import shuffle
 import numpy as np
 from keras.utils.all_utils import Sequence
 
+AUGMENTATIONS_TEST = Compose([
+    CLAHE(always_apply=True)
+])
 
 class DataLoader():
     def __init__(self, config=None):
@@ -59,15 +63,16 @@ class Gan_data_generator(Sequence):
         for i, batch in enumerate(batches):
             for file in batch:
                 img = imread(file)
+                img = AUGMENTATIONS_TEST(image=img)["image"]
                 if len(img.shape) < 3:
                     img = tf.expand_dims(img, axis=-1)
                 if img.shape[-1] != 3:
                     img = tf.image.grayscale_to_rgb(img)
                 img = tf.image.resize_with_pad(img, self.img_height, self.img_width)
                 if i == 0:
-                    neg.append(img / 127.5 - 1.)
+                    neg.append(tf.keras.applications.inception_v3.preprocess_input(img))
                 else:
-                    pos.append(img / 127.5 - 1.)
+                    pos.append(tf.keras.applications.inception_v3.preprocess_input(img))
         neg = tf.stack(neg)
         pos = tf.stack(pos)
         return neg, pos
