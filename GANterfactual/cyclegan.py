@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from GANterfactual.dataloader import DataLoader
 from GANterfactual.discriminator import build_discriminator
-from GANterfactual.generator import build_generator, ResnetGenerator
+from GANterfactual.generator import UnetGenerator, ResnetGenerator
 import tensorflow as tf
 import os
 import numpy as np
@@ -59,8 +59,8 @@ class CycleGAN():
         if self.gan_config["train"]["generator"] == "unet":
             use_leaky_relu = self.gan_config['train']['leaky_relu']
             use_skip_connections = self.gan_config['train']['skip_connections']
-            self.g_NP = build_generator(self.img_shape, self.gf, self.channels, use_leaky_relu, use_skip_connections)
-            self.g_PN = build_generator(self.img_shape, self.gf, self.channels, use_leaky_relu, use_skip_connections)
+            self.g_NP = UnetGenerator(self.img_shape, self.gf, self.channels, use_leaky_relu, use_skip_connections)
+            self.g_PN = UnetGenerator(self.img_shape, self.gf, self.channels, use_leaky_relu, use_skip_connections)
         else:
             self.g_NP = ResnetGenerator(self.img_shape, self.channels, self.gf)
             self.g_PN = ResnetGenerator(self.img_shape, self.channels, self.gf)
@@ -253,6 +253,7 @@ class CycleGAN():
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
                     self.sample_images(epoch, batch_i, imgs_N[0], imgs_P[0])
+                    print("Done")
 
             # Comment this in if you want to save checkpoints:
             self.save(os.path.join('models', f'GANterfactual_{execution_id}', 'ep_' + str(epoch)))

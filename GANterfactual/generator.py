@@ -7,7 +7,7 @@ import tensorflow_addons as tfa
 import tensorflow as tf
 
 
-def build_generator(img_shape, gf, channels, leaky_relu=False, skip_connections=True):
+def UnetGenerator(img_shape, gf, channels, leaky_relu=False, skip_connections=True):
     """U-Net Generator"""
 
     def conv2d(layer_input, filters, f_size=4, last=False):
