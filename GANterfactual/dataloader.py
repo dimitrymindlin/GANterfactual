@@ -51,23 +51,30 @@ class Gan_data_generator(Sequence):
 
     def __getitem__(self, idx):
         # TODO: ONLY FOR BATCH SIZE OF 1
-        batch_neg = [self.neg_image_paths[idx % len(self.neg_image_paths)]]
-        batch_pos = [self.pos_image_paths[idx % len(self.pos_image_paths)]]
+        if idx > len(self.neg_image_paths):
+            batch_neg = None
+        else:
+            batch_neg = [self.neg_image_paths[idx % len(self.neg_image_paths)]]
+        if idx > len(self.pos_image_paths):
+            batch_pos = None
+        else:
+            batch_pos = [self.pos_image_paths[idx % len(self.pos_image_paths)]]
         batches = [batch_neg, batch_pos]
         pos = []
         neg = []
         for i, batch in enumerate(batches):
-            for file in batch:
-                img = imread(file)
-                if len(img.shape) < 3:
-                    img = tf.expand_dims(img, axis=-1)
-                if img.shape[-1] != 3:
-                    img = tf.image.grayscale_to_rgb(img)
-                img = tf.image.resize_with_pad(img, self.img_height, self.img_width)
-                if i == 0:
-                    neg.append(img / 127.5 - 1.)
-                else:
-                    pos.append(img / 127.5 - 1.)
+            if batch != None:
+                for file in batch:
+                    img = imread(file)
+                    if len(img.shape) < 3:
+                        img = tf.expand_dims(img, axis=-1)
+                    if img.shape[-1] != 3:
+                        img = tf.image.grayscale_to_rgb(img)
+                    img = tf.image.resize_with_pad(img, self.img_height, self.img_width)
+                    if i == 0:
+                        neg.append(img / 127.5 - 1.)
+                    else:
+                        pos.append(img / 127.5 - 1.)
         neg = tf.stack(neg)
         pos = tf.stack(pos)
         return neg, pos
@@ -151,13 +158,13 @@ def get_mura_data(img_height, img_width):
     # To get the filenames for a task
     def filenames(part, train=True):
         root = '../tensorflow_datasets/downloads/cjinny_mura-v11/'
-        #root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
+        root = '/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/'
         if train:
             csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
-            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
+            csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/train_image_paths.csv"
         else:
             csv_path = "../tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
-            #csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
+            csv_path = "/Users/dimitrymindlin/tensorflow_datasets/downloads/cjinny_mura-v11/MURA-v1.1/valid_image_paths.csv"
 
         with open(csv_path, 'rb') as F:
             d = F.readlines()
@@ -173,19 +180,19 @@ def get_mura_data(img_height, img_width):
 
     part = 'XR_WRIST'  # part to work with
     train_x, train_y = filenames(part=part)  # train data
-    test_x, test_y = filenames(part=part, train=False)  # test data
+    test_x_filenames, test_y = filenames(part=part, train=False)  # test data
     train_x, valid_x, train_y, valid_y = train_test_split(train_x, train_y, test_size=0.2,
                                                           random_state=42)  # split train and valid data
 
     train_x, train_y = to_categorical(train_x, train_y)
     valid_x, valid_y = to_categorical(valid_x, valid_y)
-    test_x, test_y = to_categorical(test_x, test_y)
+    test_x_filenames, test_y = to_categorical(test_x_filenames, test_y)
 
     batch_size = 1
     train_batch_generator = Gan_data_generator(train_x, train_y, batch_size, img_height, img_width)
     valid_batch_generator = Gan_data_generator(valid_x, valid_y, batch_size, img_height, img_width)
-    test_batch_generator = Gan_data_generator(test_x, test_y, batch_size, img_height, img_width)
-    clf_test_data_generator = CLFDataGenerator(test_x, test_y, batch_size, img_height, img_width)
+    test_batch_generator = Gan_data_generator(test_x_filenames, test_y, batch_size, img_height, img_width)
+    clf_test_data_generator = CLFDataGenerator(test_x_filenames, test_y, batch_size, img_height, img_width)
 
     return train_batch_generator, valid_batch_generator, test_batch_generator, clf_test_data_generator, test_y
 
