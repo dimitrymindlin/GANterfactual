@@ -13,9 +13,10 @@ from GANterfactual.generator import UnetGenerator, ResnetGenerator
 import tensorflow as tf
 import os
 import numpy as np
-from GANterfactual.load_clf import load_classifier, load_classifier_complete
+from GANterfactual.load_clf import load_classifier_complete
 from configs.mura_pretraining_config import mura_config
 import tensorflow_addons as tfa
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
 
@@ -336,21 +337,34 @@ class CycleGAN():
     def evaluate(self):
         y_pred_np = []
         y_pred_pn = []
+        ssim_np = 0
+        ssim_pn = 0
+        psnr_np = 0
+        psnr_pn = 0
         for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
             # Translate images to the other domain
-            for k in range(2):
+            if tf.size(img_N) != 0:
                 fake_P = self.g_NP.predict(img_N)
-                fake_N = self.g_PN.predict(img_P)
                 y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
+                ssim_np += structural_similarity(np.squeeze(img_N.numpy()), np.squeeze(fake_P), channel_axis=2)
+                psnr_np += peak_signal_noise_ratio(np.squeeze(img_N.numpy()), np.squeeze(fake_P))
+            if tf.size(img_P) != 0:
+                fake_N = self.g_PN.predict(img_P)
                 y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
+                ssim_pn += structural_similarity(np.squeeze(img_P.numpy()), np.squeeze(fake_N), channel_axis=2)
+                psnr_pn += peak_signal_noise_ratio(np.squeeze(img_P.numpy()), np.squeeze(fake_N))
 
         print("NP Gan Model")
         print(confusion_matrix([1]*len(y_pred_np), y_pred_np))
         print(classification_report([1]*len(y_pred_np), y_pred_np))
-
+        print("SSIM: ", ssim_np / len(y_pred_np))
+        print("PSNR: ", psnr_np / len(y_pred_np))
+        print()
         print("PN Gan Model")
         print(confusion_matrix([0] * len(y_pred_pn), y_pred_pn))
         print(classification_report([0] * len(y_pred_pn), y_pred_pn))
+        print("SSIM: ", ssim_pn / len(y_pred_pn))
+        print("PSNR: ", psnr_pn / len(y_pred_pn))
 
     def evaluate_oracle_score(self, oracle):
         y_pred_np = []
@@ -359,14 +373,13 @@ class CycleGAN():
         y_pred_pn_oracle = []
         for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
             # Translate images to the other domain
-            for k in range(2):
-                fake_P = self.g_NP.predict(img_N)
-                fake_N = self.g_PN.predict(img_P)
-                # Predict images
-                y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
-                y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
-                y_pred_np_oracle.append(int(np.argmax(oracle.predict(0.5 * fake_P + 0.5))))
-                y_pred_pn_oracle.append(int(np.argmax(oracle.predict(0.5 * fake_N + 0.5))))
+            fake_P = self.g_NP.predict(img_N)
+            fake_N = self.g_PN.predict(img_P)
+            # Predict images
+            y_pred_np.append(int(np.argmax(self.classifier.predict(fake_P))))
+            y_pred_pn.append(int(np.argmax(self.classifier.predict(fake_N))))
+            y_pred_np_oracle.append(int(np.argmax(oracle.predict(0.5 * fake_P + 0.5))))
+            y_pred_pn_oracle.append(int(np.argmax(oracle.predict(0.5 * fake_N + 0.5))))
 
         similar_pred_count = sum(x == y == 1 for x, y in zip(y_pred_np, y_pred_np_oracle))
         oracle_score_np = 1 / len(y_pred_np) * similar_pred_count
