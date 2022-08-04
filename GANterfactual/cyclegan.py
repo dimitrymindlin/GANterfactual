@@ -9,26 +9,17 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 import matplotlib.pyplot as plt
 
-from GANterfactual.dataloader import DataLoader
 from GANterfactual.discriminator import build_discriminator
 from GANterfactual.generator import UnetGenerator, ResnetGenerator
 import tensorflow as tf
 import os
 import numpy as np
 from GANterfactual.load_clf import load_classifier_complete
-from configs.mura_pretraining_config import mura_config
-import tensorflow_addons as tfa
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
-print("Test")
-print(len(tf.config.list_physical_devices('GPU')))
-print("Test")
-if len(tf.config.list_physical_devices('GPU')) == 0:
-    TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets"
-else:
-    TFDS_PATH = "../tensorflow_datasets"
+
 
 
 class CycleGAN():
@@ -45,7 +36,7 @@ class CycleGAN():
         # self.data_loader = DataLoader(config=mura_config)
         self.A_B_dataset, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
             'XR_WRIST',
-            TFDS_PATH,
+            gan_config["train"]["tfds_path"],
             gan_config["train"]["batch_size"],
             gan_config["train"]["image_height"],
             gan_config["train"]["image_height"], )
