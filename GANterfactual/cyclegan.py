@@ -21,7 +21,6 @@ execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
 
 
-
 class CycleGAN():
     def __init__(self, gan_config):
         self.img_rows = gan_config["data"]["image_height"]
@@ -36,10 +35,10 @@ class CycleGAN():
         # self.data_loader = DataLoader(config=mura_config)
         self.A_B_dataset, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
             'XR_WRIST',
-            gan_config["train"]["tfds_path"],
+            gan_config["data"]["tfds_path"],
             gan_config["train"]["batch_size"],
-            gan_config["train"]["image_height"],
-            gan_config["train"]["image_height"], )
+            gan_config["data"]["image_height"],
+            gan_config["data"]["image_height"], )
 
         # Number of filters in the first layer of G and D
         self.gf = 32

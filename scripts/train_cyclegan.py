@@ -24,17 +24,14 @@ for arg in sys.argv:
         gan_config["train"]["skip_connections"] = False
 
 if __name__ == '__main__':
-    print("Test")
-    print(len(tf.config.list_physical_devices('GPU')))
-    print("Test")
     if len(tf.config.list_physical_devices('GPU')) == 0:
         TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets"
     else:
         TFDS_PATH = "../tensorflow_datasets"
-    gan_config["train"]["tfds_path"] = TFDS_PATH
+    gan_config["data"]["tfds_path"] = TFDS_PATH
     gan = CycleGAN(gan_config)
     gan.construct()
-    #gan.evaluate_clf()
+    # gan.evaluate_clf()
     gan.train()
     gan.evaluate()
     # gan.save(os.path.join('..', 'models', 'GANterfactual'))
