@@ -22,7 +22,11 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
-TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets"
+
+if len(tf.config.list_physical_devices('GPU')) == 0:
+    TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets"
+else:
+    TFDS_PATH = "../tensorflow_datasets"
 
 
 class CycleGAN():
@@ -36,7 +40,7 @@ class CycleGAN():
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
-        #self.data_loader = DataLoader(config=mura_config)
+        # self.data_loader = DataLoader(config=mura_config)
         self.A_B_dataset, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
             'XR_WRIST',
             TFDS_PATH,
@@ -212,7 +216,8 @@ class CycleGAN():
 
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-            for batch_i, (imgs_N, imgs_P) in tqdm.tqdm(enumerate(self.A_B_dataset), desc='Inner Epoch Loop', total=self.len_dataset_train):
+            for batch_i, (imgs_N, imgs_P) in tqdm.tqdm(enumerate(self.A_B_dataset), desc='Inner Epoch Loop',
+                                                       total=self.len_dataset_train):
                 # ----------------------
                 #  Train Discriminators every second batch
                 # ----------------------
