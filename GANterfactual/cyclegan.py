@@ -1,5 +1,7 @@
 from datetime import datetime
 
+import tqdm
+from mura import get_mura_ds_by_body_part_split_class
 from sklearn.metrics import confusion_matrix, classification_report
 from tensorflow.keras import Input
 from tensorflow_addons.layers import InstanceNormalization
@@ -17,8 +19,10 @@ from GANterfactual.load_clf import load_classifier_complete
 from configs.mura_pretraining_config import mura_config
 import tensorflow_addons as tfa
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
+TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets"
 
 
 class CycleGAN():
@@ -32,7 +36,13 @@ class CycleGAN():
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
-        self.data_loader = DataLoader(config=mura_config)
+        #self.data_loader = DataLoader(config=mura_config)
+        self.A_B_dataset, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
+            'XR_WRIST',
+            TFDS_PATH,
+            gan_config["train"]["batch_size"],
+            gan_config["train"]["image_height"],
+            gan_config["train"]["image_height"], )
 
         # Number of filters in the first layer of G and D
         self.gf = 32
@@ -100,10 +110,10 @@ class CycleGAN():
         self.g_NP.save(os.path.join(cyclegan_folder, 'generator_np.h5'))
         self.g_PN.save(os.path.join(cyclegan_folder, 'generator_pn.h5'))
 
-    def evaluate_clf(self):
-        """self.classifier.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-                      loss='categorical_crossentropy',
-                      metrics=["accuracy", tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])"""
+    """def evaluate_clf(self):
+        #self.classifier.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+        #              loss='categorical_crossentropy',
+        #              metrics=["accuracy", tf.keras.metrics.AUC(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
         print("Evaluating clf...")
         result = self.classifier.evaluate(self.data_loader.clf_test_data)
         for metric, value in zip(self.classifier.metrics_names, result):
@@ -122,7 +132,7 @@ class CycleGAN():
         cm = confusion_matrix(vy_data2, yp2)
         print(cm)
 
-        print(classification_report(vy_data2, yp2))
+        print(classification_report(vy_data2, yp2))"""
 
     def build_combined(self):
         optimizer = Adam(self.gan_config["train"]["learn_rate"],
@@ -156,7 +166,7 @@ class CycleGAN():
         valid_P = self.d_P(fake_P)
 
         # Counterfactual loss
-        #self.classifier = load_classifier(self.gan_config)
+        # self.classifier = load_classifier(self.gan_config)
         self.classifier = load_classifier_complete(self.gan_config)
         self.classifier._name = "classifier"
         self.classifier.trainable = False
@@ -202,7 +212,7 @@ class CycleGAN():
 
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-            for batch_i, (imgs_N, imgs_P) in enumerate(self.data_loader.load_batch()):
+            for batch_i, (imgs_N, imgs_P) in tqdm.tqdm(enumerate(self.A_B_dataset), desc='Inner Epoch Loop', total=self.len_dataset_train):
                 # ----------------------
                 #  Train Discriminators every second batch
                 # ----------------------
@@ -290,7 +300,7 @@ class CycleGAN():
             for j in range(c):
                 axs[i, j].imshow(gen_imgs[cnt][:, :, 0], cmap='gray')
                 axs[i, j].set_title(f'{titles[j]} T: ({correct_classification[cnt]} | P: {classification[cnt]})')
-                #axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
+                # axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
                 axs[i, j].axis('off')
                 cnt += 1
         fig.savefig(f"{img_folder}/%d_%d.png" % (epoch, batch_i))
@@ -301,7 +311,7 @@ class CycleGAN():
         os.makedirs(img_folder, exist_ok=True)
         r, c = 2, 3
         image_list = []
-        for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
+        for img_num, (img_N, img_P) in enumerate(self.A_B_dataset_test):
             if img_num == 5:
                 break
             # Translate images to the other domain
@@ -341,7 +351,7 @@ class CycleGAN():
         ssim_pn = 0
         psnr_np = 0
         psnr_pn = 0
-        for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
+        for img_num, (img_N, img_P) in enumerate(self.A_B_dataset_test):
             # Translate images to the other domain
             if tf.size(img_N) != 0:
                 fake_P = self.g_NP.predict(img_N)
@@ -355,8 +365,8 @@ class CycleGAN():
                 psnr_pn += peak_signal_noise_ratio(np.squeeze(img_P.numpy()), np.squeeze(fake_N))
 
         print("NP Gan Model")
-        print(confusion_matrix([1]*len(y_pred_np), y_pred_np))
-        print(classification_report([1]*len(y_pred_np), y_pred_np))
+        print(confusion_matrix([1] * len(y_pred_np), y_pred_np))
+        print(classification_report([1] * len(y_pred_np), y_pred_np))
         print("SSIM: ", ssim_np / len(y_pred_np))
         print("PSNR: ", psnr_np / len(y_pred_np))
         print()
@@ -371,7 +381,7 @@ class CycleGAN():
         y_pred_pn = []
         y_pred_np_oracle = []
         y_pred_pn_oracle = []
-        for img_num, (img_N, img_P) in enumerate(self.data_loader.load_test()):
+        for img_num, (img_N, img_P) in enumerate(self.A_B_dataset_test):
             # Translate images to the other domain
             fake_P = self.g_NP.predict(img_N)
             fake_N = self.g_PN.predict(img_P)
@@ -388,4 +398,3 @@ class CycleGAN():
         similar_pred_count = sum(x == y == 0 for x, y in zip(y_pred_pn, y_pred_pn_oracle))
         oracle_score_pn = 1 / len(y_pred_pn) * similar_pred_count
         print(f"Score for PN: {oracle_score_pn}")
-
