@@ -6,4 +6,4 @@
 #SBATCH --mail-user=dmindlin@techfak.uni-bielefeld.de
 #SBATCH --mail-type=END
 
-srun 1_1_1_resnet_3.job.sh
+srun 1_1_1_resnet.job.sh
