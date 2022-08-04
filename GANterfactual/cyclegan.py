@@ -22,7 +22,7 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
-
+print(len(tf.config.list_physical_devices('GPU')))
 if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets"
 else:
