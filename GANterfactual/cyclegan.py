@@ -17,6 +17,8 @@ import numpy as np
 from GANterfactual.load_clf import load_classifier_complete
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
+from utils.model_utils import get_preprocessing_by_model_name
+
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
 
@@ -32,13 +34,14 @@ class CycleGAN():
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
-        # self.data_loader = DataLoader(config=mura_config)
+        self.model_specific_preprocessing = get_preprocessing_by_model_name(gan_config)
         self.A_B_dataset, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
             'XR_WRIST',
             gan_config["data"]["tfds_path"],
             gan_config["train"]["batch_size"],
             gan_config["data"]["image_height"],
-            gan_config["data"]["image_height"], )
+            gan_config["data"]["image_height"],
+            special_normalisation=self.model_specific_preprocessing)
 
         # Number of filters in the first layer of G and D
         self.gf = 32
