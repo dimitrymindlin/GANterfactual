@@ -1,23 +1,20 @@
 from datetime import datetime
-
 import tqdm
-from mura import get_mura_ds_by_body_part_split_class
-from sklearn.metrics import confusion_matrix, classification_report
-from tensorflow.keras import Input
-from tensorflow_addons.layers import InstanceNormalization
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.models import Model
-import matplotlib.pyplot as plt
-
-from GANterfactual.discriminator import build_discriminator
-from GANterfactual.generator import UnetGenerator, ResnetGenerator
 import tensorflow as tf
 import os
 import numpy as np
+from tensorflow.keras import Input
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import Model
+from tensorflow_addons.layers import InstanceNormalization
+import matplotlib.pyplot as plt
+from GANterfactual.discriminator import build_discriminator
+from GANterfactual.generator import UnetGenerator, ResnetGenerator
 from GANterfactual.load_clf import load_classifier_complete
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
-
 from utils.model_utils import get_preprocessing_by_model_name
+from mura import get_mura_ds_by_body_part_split_class
+from sklearn.metrics import confusion_matrix, classification_report
 
 execution_id = datetime.now().strftime("%Y-%m-%d--%H.%M")
 writer = tf.summary.create_file_writer(f'logs/' + execution_id)
@@ -35,13 +32,15 @@ class CycleGAN():
         patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
         self.model_specific_preprocessing = get_preprocessing_by_model_name(gan_config)
-        self.A_B_dataset, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
+        self.A_B_dataset, self.A_B_dataset_valid, self.A_B_dataset_test, self.len_dataset_train = get_mura_ds_by_body_part_split_class(
             'XR_WRIST',
             gan_config["data"]["tfds_path"],
             gan_config["train"]["batch_size"],
             gan_config["data"]["image_height"],
             gan_config["data"]["image_height"],
             special_normalisation=self.model_specific_preprocessing)
+        # Merge Train and Valid as Valid is not needed for cyclegan
+        self.A_B_dataset = self.A_B_dataset.concatenate(self.A_B_dataset_valid)
 
         # Number of filters in the first layer of G and D
         self.gf = 32
