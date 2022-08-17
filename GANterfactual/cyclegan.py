@@ -50,7 +50,7 @@ class CycleGAN():
         self.lambda_cycle = self.gan_config["train"]["cycle_consistency_loss_weight"]
         self.lambda_id = self.gan_config["train"]["identity_loss_weight"]
         self.lambda_counterfactual = self.gan_config["train"]["counterfactual_loss_weight"]
-        self.lambda_discriminator = self.gan_config["train"]["discriminator_loss_weight"]
+        self.lambda_adversarial = self.gan_config["train"]["adversarial_loss_weight"]
 
         self.d_N = None
         self.d_P = None
@@ -185,7 +185,7 @@ class CycleGAN():
                                     'mse', 'mse',
                                     'mae', 'mae',
                                     'mae', 'mae'],
-                              loss_weights=[self.lambda_discriminator, self.lambda_discriminator,
+                              loss_weights=[self.lambda_adversarial, self.lambda_adversarial,
                                             self.lambda_counterfactual, self.lambda_counterfactual,
                                             self.lambda_cycle, self.lambda_cycle,
                                             self.lambda_id, self.lambda_id],
