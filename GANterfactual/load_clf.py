@@ -1,12 +1,10 @@
 from __future__ import print_function, division
-from GANterfactual.mura_model import WristPredictNet
-from configs.mura_pretraining_config import mura_config
 import tensorflow as tf
 
-M1_WEIGHTS_PATH = "../checkpoints/2022-03-24--12.42/model"
+#M1_WEIGHTS_PATH = "../checkpoints/2022-03-24--12.42/model"
 
 
-def load_classifier(gan_config):
+"""def load_classifier(gan_config):
     print("Loading Pretrained Model ...")
     GPU_WEIGHTS_PATH = f"checkpoints/{gan_config['train']['clf_ckpt']}/cp.ckpt"
     model = WristPredictNet(mura_config)
@@ -14,7 +12,7 @@ def load_classifier(gan_config):
     model.built = True
     model.load_weights(GPU_WEIGHTS_PATH).expect_partial()
     print("Model Loaded.")
-    return model
+    return model"""
 
 
 def load_classifier_complete(gan_config):
