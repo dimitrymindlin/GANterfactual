@@ -34,11 +34,11 @@ def get_model_by_name(config, input_shape, weights, img_input=None):
 
 
 def get_preprocessing_by_model_name(config):
-    if config["model"]["name"] == "densenet":
+    if config["train"]["clf_model"] == "densenet":
         preprocessing_layer = tf.keras.applications.densenet.preprocess_input
-    elif config["model"]["name"] == "vgg":
+    elif config["train"]["clf_model"] == "vgg":
         preprocessing_layer = tf.keras.applications.vgg19.preprocess_input
-    elif config["model"]["name"] == "resnet":
+    elif config["train"]["clf_model"] == "resnet":
         preprocessing_layer = tf.keras.applications.resnet50.preprocess_input
 
     else:

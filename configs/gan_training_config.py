@@ -24,7 +24,8 @@ gan_config = {
         "leaky_relu": True,
         "generator": "unet",
         "skip_connections": True,
-        "generator_training_multiplier": 1
+        "generator_training_multiplier": 1,
+        "clf_model": "inception"
     },
     "test": {
         "batch_size": 10,
