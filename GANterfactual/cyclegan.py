@@ -213,7 +213,7 @@ class CycleGAN():
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
             batch_i = 0
-            for imgs_N, imgs_P in tqdm.tqdm(self.A_B_dataset, desc='Inner Epoch Loop',otal=self.len_dataset_train):
+            for imgs_N, imgs_P in tqdm.tqdm(self.A_B_dataset, desc='Inner Epoch Loop', total=self.len_dataset_train):
                 # ----------------------
                 #  Train Discriminators every second batch
                 # ----------------------
