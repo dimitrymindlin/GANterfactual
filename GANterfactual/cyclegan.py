@@ -212,8 +212,8 @@ class CycleGAN():
 
         for epoch in range(epochs):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
-            batch_i = 0
-            for imgs_N, imgs_P in tqdm.tqdm(self.A_B_dataset, desc='Inner Epoch Loop', total=self.len_dataset_train):
+            for batch_i, (imgs_N, imgs_P) in enumerate(
+                    tqdm.tqdm(self.A_B_dataset, desc='Inner Epoch Loop', total=self.len_dataset_train)):
                 # ----------------------
                 #  Train Discriminators every second batch
                 # ----------------------
@@ -266,7 +266,7 @@ class CycleGAN():
                 if batch_i % sample_interval == 0:
                     self.sample_images(epoch, batch_i, imgs_N[0], imgs_P[0])
                     print("Done")
-                batch_i += 1
+
             # Comment this in if you want to save checkpoints:
             self.save(os.path.join('models', f'GANterfactual_{execution_id}', 'ep_' + str(epoch)))
 
