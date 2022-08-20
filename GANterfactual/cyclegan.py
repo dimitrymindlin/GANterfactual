@@ -210,7 +210,7 @@ class CycleGAN():
         class_N = np.stack([np.ones(batch_size), np.zeros(batch_size)]).T
         class_P = np.stack([np.zeros(batch_size), np.ones(batch_size)]).T
 
-        for epoch in range(epochs):
+        for epoch in tqdm.trange(epochs, desc='Epoch Loop'):
             # Positive (abnormal) = class label 1, Negative (normal) = class label 0
             for batch_i, (imgs_N, imgs_P) in enumerate(
                     tqdm.tqdm(self.A_B_dataset, desc='Inner Epoch Loop', total=self.len_dataset_train)):
