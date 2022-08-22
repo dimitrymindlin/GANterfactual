@@ -267,8 +267,12 @@ class CycleGAN():
                     self.sample_images(epoch, batch_i, imgs_N[0], imgs_P[0])
                     print("Done")
 
+                if batch_i == self.len_dataset_train:
+                    break  # TODO: Check why for loop is not ending automatically ... strange
+
             # Comment this in if you want to save checkpoints:
-            self.save(os.path.join('models', f'GANterfactual_{execution_id}', 'ep_' + str(epoch)))
+            if epoch > 5 and epoch % 2 == 0:
+                self.save(os.path.join('models', f'GANterfactual_{execution_id}', 'ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
         img_folder = f"images_{execution_id}"
