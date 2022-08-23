@@ -271,7 +271,7 @@ class CycleGAN():
                     break  # TODO: Check why for loop is not ending automatically ... strange
 
             # Comment this in if you want to save checkpoints:
-            if epoch > 5 and epoch % 2 == 0:
+            if (epoch > 5 and epoch % 2 == 0) or (epoch == epochs -1 ):
                 self.save(os.path.join('models', f'GANterfactual_{execution_id}', 'ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
