@@ -14,7 +14,7 @@ gan_config = {
         "optimizer": "adam",
         "batch_size": 1,
         "learn_rate": 0.0002,
-        "epochs": 20,
+        "epochs": 18,
         "beta1": 0.5,
         "adversarial_loss_weight": 1,
         "cycle_consistency_loss_weight": 10,
@@ -22,7 +22,7 @@ gan_config = {
         "identity_loss_weight": 1,
         "clf_ckpt": "inception_mura/2022-06-04--00.05",
         "leaky_relu": True,
-        "generator": "unet",
+        "generator": "resnet",
         "skip_connections": True,
         "generator_training_multiplier": 1,
         "clf_model": "inception"
