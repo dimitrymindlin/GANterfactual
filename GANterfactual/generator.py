@@ -1,7 +1,10 @@
-from tensorflow.keras.layers import Dropout, LeakyReLU
-from tensorflow.keras.layers import Input, Concatenate, UpSampling2D, Conv2D
-from tensorflow.keras.models import Model
-from tensorflow_addons.layers import InstanceNormalization
+from keras.layers import Dropout
+from keras.layers import Input, Concatenate
+from keras.layers.advanced_activations import LeakyReLU
+from keras.layers.convolutional import UpSampling2D, Conv2D
+from keras.models import Model
+from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
+
 
 def build_generator(img_shape, gf, channels):
     """U-Net Generator"""
