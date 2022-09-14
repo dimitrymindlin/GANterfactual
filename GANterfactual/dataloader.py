@@ -2,8 +2,7 @@ from __future__ import print_function, division
 
 import os
 
-import keras
-import numpy as np
+import tensorflow.keras as keras
 
 
 class DataLoader():
