@@ -1,11 +1,14 @@
-import keras
-from keras import Input, Model
-from keras.layers import Dense, Activation, Dropout, Flatten, Conv2D, MaxPooling2D
-from keras.preprocessing.image import ImageDataGenerator
-from keras.layers.normalization import BatchNormalization
+import tensorflow as tf
+import tensorflow.keras as keras
+from tensorflow.keras.layers import BatchNormalization
 import numpy as np
 from keras.regularizers import l2
 import os
+
+from tensorflow.python.keras import Input, Model
+from tensorflow.python.keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
+
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir="log")
 np.random.seed(1000)
 dimension = 512
@@ -102,7 +105,7 @@ def get_adapted_alexNet():
     x = Dense(2)(x)
     x = Activation('softmax')(x)
 
-    opt = keras.optimizers.SGD(0.0001, 0.9)
+    opt = SGD(0.0001, 0.9)
     model = Model(input, x)
     model.compile(loss='mse',
                   metrics=['accuracy'],
@@ -113,11 +116,11 @@ def get_adapted_alexNet():
 def get_data():
     image_size = dimension
     batch_size = 32
-    # Load data for training
-    train_gen = ImageDataGenerator(preprocessing_function=(lambda x: x / 127.5 - 1.))
+    # Load rsna_data for training
+    train_gen = tf.keras.preprocessing.image.ImageDataGenerator(preprocessing_function=(lambda x: x / 127.5 - 1.))
 
     train_data = train_gen.flow_from_directory(
-        directory="../data/train",
+        directory="../rsna_data/train",
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode='categorical',
@@ -125,29 +128,45 @@ def get_data():
         color_mode='grayscale')
 
     validation_data = train_gen.flow_from_directory(
-        directory="../data/validation",
+        directory="../rsna_data/validation",
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode='categorical',
         shuffle=True,
         color_mode='grayscale')
 
-    return train_data, validation_data
+    test_data = train_gen.flow_from_directory(
+        directory="../rsna_data/test",
+        target_size=(image_size, image_size),
+        batch_size=batch_size,
+        class_mode='categorical',
+        shuffle=True,
+        color_mode='grayscale')
+
+    return train_data, validation_data, test_data
 
 
 model = get_adapted_alexNet()
 model.summary()
 
-train, test = get_data()
+train, validation, test = get_data()
 check_point = keras.callbacks.ModelCheckpoint("classifier.h5", save_best_only=True, monitor='val_accuracy', mode='max')
 early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=10, restore_best_weights=True)
 
 if __name__ == "__main__":
     hist = model.fit_generator(train,
                                epochs=1000,
-                               validation_data=test,
+                               validation_data=validation,
                                callbacks=[check_point, early_stopping,tensorboard_callback],
                                steps_per_epoch=len(train),
-                               validation_steps=len(test))
+                               validation_steps=len(validation))
 
     model.save(os.path.join('..','models','classifier','model.h5'), include_optimizer=False)
+    print("Train History")
+    print(hist)
+    print("Evaluation")
+    result = model.evaluate(test)
+    result = dict(zip(model.metrics_names, result))
+    result_matrix = [[k, str(w)] for k, w in result.items()]
+    for metric, value in zip(model.metrics_names, result):
+        print(metric, ": ", value)
