@@ -9,13 +9,15 @@ from tensorflow.python.keras import Input, Model
 from tensorflow.python.keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from PIL import ImageFile
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir="GANterfactual/log")
 np.random.seed(1000)
 dimension = 512
 dataset_path = "../tensorflow_datasets/rsna_data"
-def get_adapted_alexNet():
 
+
+def get_adapted_alexNet():
     input = Input(shape=(dimension, dimension, 1))
 
     # 1st Convolutional Layer
@@ -48,8 +50,8 @@ def get_adapted_alexNet():
     x = Conv2D(filters=384,
                kernel_size=(3, 3),
                strides=(1, 1),
-               padding='valid') (x)
-    x  = Activation('relu')(x)
+               padding='valid')(x)
+    x = Activation('relu')(x)
     # Batch Normalisation
     x = BatchNormalization()(x)
 
@@ -68,7 +70,7 @@ def get_adapted_alexNet():
     x = Conv2D(filters=256,
                kernel_size=(3, 3),
                strides=(1, 1),
-               padding='valid') (x)
+               padding='valid')(x)
     x = Activation('relu')(x)
     # Pooling
     x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='valid')(x)
@@ -79,7 +81,6 @@ def get_adapted_alexNet():
     x = Flatten()(x)
     # 1st Dense Layer
     x = Dense(4096,
-              input_shape=(dimension * dimension * 1, ),
               kernel_regularizer=l2(0.001),
               bias_regularizer=l2(0.001))(x)
     x = Activation('relu')(x)
@@ -158,7 +159,7 @@ if __name__ == "__main__":
     hist = model.fit_generator(train,
                                epochs=1000,
                                validation_data=validation,
-                               callbacks=[check_point, early_stopping,tensorboard_callback],
+                               callbacks=[check_point, early_stopping, tensorboard_callback],
                                steps_per_epoch=len(train),
                                validation_steps=len(validation))
 
