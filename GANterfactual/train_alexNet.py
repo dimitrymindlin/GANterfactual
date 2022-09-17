@@ -12,7 +12,7 @@ from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir="log")
 np.random.seed(1000)
 dimension = 512
-
+dataset_path = "../tensorflow_datasets/rsna_data"
 def get_adapted_alexNet():
 
     input = Input(shape=(dimension, dimension, 1))
@@ -120,7 +120,7 @@ def get_data():
     train_gen = tf.keras.preprocessing.image.ImageDataGenerator(preprocessing_function=(lambda x: x / 127.5 - 1.))
 
     train_data = train_gen.flow_from_directory(
-        directory="../rsna_data/train",
+        directory=f"{dataset_path}/train",
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode='categorical',
@@ -128,7 +128,7 @@ def get_data():
         color_mode='grayscale')
 
     validation_data = train_gen.flow_from_directory(
-        directory="../rsna_data/validation",
+        directory=f"{dataset_path}/validation",
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode='categorical',
@@ -136,7 +136,7 @@ def get_data():
         color_mode='grayscale')
 
     test_data = train_gen.flow_from_directory(
-        directory="../rsna_data/test",
+        directory=f"{dataset_path}/test",
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode='categorical',
