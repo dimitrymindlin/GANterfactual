@@ -8,7 +8,8 @@ import os
 from tensorflow.python.keras import Input, Model
 from tensorflow.python.keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
-
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir="GANterfactual/log")
 np.random.seed(1000)
 dimension = 512
