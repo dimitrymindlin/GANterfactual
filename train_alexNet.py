@@ -2,13 +2,14 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import BatchNormalization
 import numpy as np
-from keras.regularizers import l2
+
 import os
 
 from tensorflow.python.keras import Input, Model
 from tensorflow.python.keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from PIL import ImageFile
+from tensorflow.python.keras.regularizers import l2
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir="GANterfactual/log")
@@ -119,7 +120,7 @@ def get_data():
     image_size = dimension
     batch_size = 32
     # Load rsna_data for training
-    train_gen = tf.keras.preprocessing.image.ImageDataGenerator(preprocessing_function=(lambda x: x / 127.5 - 1.))
+    train_gen = keras.preprocessing.image.ImageDataGenerator(preprocessing_function=(lambda x: x / 127.5 - 1.))
 
     train_data = train_gen.flow_from_directory(
         directory=f"{dataset_path}/train",
@@ -149,10 +150,12 @@ def get_data():
 
 
 model = get_adapted_alexNet()
-model.summary()
+# model.summary()
 
 train, validation, test = get_data()
-check_point = keras.callbacks.ModelCheckpoint("classifier.h5", save_best_only=True, monitor='val_accuracy', mode='max')
+weights_path = "checkpoints/alexNet/classifier.h5"
+check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
+                                              save_weights_only=True)
 early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=10, restore_best_weights=True)
 
 if __name__ == "__main__":
@@ -163,7 +166,11 @@ if __name__ == "__main__":
                                steps_per_epoch=len(train),
                                validation_steps=len(validation))
 
-    model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
+    print("Training done, best weights saved. Trying to save whole model:")
+    #model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
+    model.load_weights(weights_path)
+    print("Loaded weights")
+    tf.keras.models.save_model(model, os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=True,)
     print("Train History")
     print(hist)
     print("Evaluation")
