@@ -68,7 +68,7 @@ def rename_times(data_frame):
 def delete_times(data_frame, _keep_time_columns=keep_time_colums):
     """
     Deletes all time columns form the given dataframe that are not in *keep_time_columns*
-    :param data: the dataframe where the time columns should be deleted
+    :param rsna_data: the dataframe where the time columns should be deleted
     :param keep_time_columns: the time columns to be kept
     :return: the dataframe without unnecessary time columns
     """
@@ -145,7 +145,7 @@ def mean_of_dict_keys(dict):
 if __name__ == '__main__':
     file_names = ["ClickWorkerResults_Fragencode_AntwortCode.csv", 'ErsterClickPilot_Fragencode_AntwortCode.csv']
     # file_names = ["ClickWorkerResults_Fragencode_AntwortCode.csv"]
-    directory = "data"
+    directory = "rsna_data"
     # file_names = ["90Batch.csv"]
 
     # which image shows a Lung with Pneumonia ( "sick" or "healt"(lime survey only allows up to 5 letters))
@@ -156,7 +156,7 @@ if __name__ == '__main__':
                               8: "healt", 9: "healt", 10: "healt", 11: "healt", 12: "healt"}
 
 
-    # load the data frame containing the raw results of the survey
+    # load the rsna_data frame containing the raw results of the survey
     files = []
     for file_name in file_names:
         file_name = os.path.join(directory,file_name)

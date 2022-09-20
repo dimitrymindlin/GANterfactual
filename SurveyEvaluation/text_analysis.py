@@ -26,7 +26,7 @@ def get_point_dict(df_annotator):
 
 
 if __name__ == '__main__':
-    directory = "data"
+    directory = "rsna_data"
 
     df_annotator1 = pd.read_excel(os.path.join(directory, "categories_rater1.xlsx"))
     df_annotator2 = pd.read_excel(os.path.join(directory, "categories_rater2.xlsx"))
