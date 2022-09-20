@@ -8,12 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from skimage.transform import resize
+from tensorflow.python.keras import Input, Model
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 
-from keras.layers import Input, Dropout, Concatenate
-from keras.models import Model
-from keras.optimizers import Adam
-from keras_contrib.layers.normalization.instancenormalization import InstanceNormalization
-
+from tensorflow_addons.layers import InstanceNormalization
 
 from classifier import load_classifier
 from dataloader import DataLoader
@@ -166,7 +164,7 @@ class CycleGAN():
     def train(self, dataset_name, epochs, batch_size=1, train_N="NEGATIVE", train_P="POSITIVE", print_interval=100,
               sample_interval=1000):
 
-        # Configure data loader
+        # Configure rsna_data loader
         data_loader = DataLoader(dataset_name=dataset_name, img_res=(self.img_rows, self.img_cols))
 
         start_time = datetime.datetime.now()
@@ -313,6 +311,6 @@ class CycleGAN():
 if __name__ == '__main__':
     gan = CycleGAN()
     gan.construct(classifier_path=os.path.join('..', 'models', 'classifier', 'model.h5'), classifier_weight=1)
-    gan.train(dataset_name=os.path.join("..","data"), epochs=20, batch_size=1, print_interval=10,
+    gan.train(dataset_name=os.path.join("..","rsna_data"), epochs=20, batch_size=1, print_interval=10,
           sample_interval=100)
     gan.save(os.path.join('..', 'models', 'GANterfactual'))

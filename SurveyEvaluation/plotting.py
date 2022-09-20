@@ -72,7 +72,7 @@ if __name__ == "__main__":
     sns.set(palette='colorblind')
     order = ['LRP', 'LIME', "Counterfactual"]
     ci = 95 # confidence intervall
-    directory = "data"
+    directory = "rsna_data"
 
     ### plotting the content analysis
     data_name = os.path.join(directory, 'content_analysis_results.csv')
