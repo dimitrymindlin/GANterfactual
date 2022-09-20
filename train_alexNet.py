@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.layers import BatchNormalization
@@ -11,11 +13,13 @@ from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
 from PIL import ImageFile
 from tensorflow.python.keras.regularizers import l2
 
+TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir="GANterfactual/log")
 np.random.seed(1000)
 dimension = 512
 dataset_path = "../tensorflow_datasets/rsna_data"
+TF_LOG_DIR = 'tensorboard_logs/logs_train_clf/alexNet/' + TIMESTAMP + "/"
 
 
 def get_adapted_alexNet():
@@ -153,7 +157,7 @@ model = get_adapted_alexNet()
 # model.summary()
 
 train, validation, test = get_data()
-weights_path = "checkpoints/alexNet/classifier.h5"
+weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
 check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
                                               save_weights_only=True)
 early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=10, restore_best_weights=True)
@@ -167,10 +171,11 @@ if __name__ == "__main__":
                                validation_steps=len(validation))
 
     print("Training done, best weights saved. Trying to save whole model:")
-    #model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
+    # model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
     model.load_weights(weights_path)
     print("Loaded weights")
-    tf.keras.models.save_model(model, os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=True,)
+    tf.keras.models.save_model(model, os.path.join('', 'models', 'classifier', f'alexNet_{TIMESTAMP}_model.h5'),
+                               include_optimizer=True, )
     print("Train History")
     print(hist)
     print("Evaluation")
