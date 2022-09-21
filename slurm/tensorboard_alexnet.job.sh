@@ -4,7 +4,7 @@ conda activate medical-decision-support-system
 
 cd /media/compute/homes/dmindlin/GANterfactual
 
-tensorboard dev upload --logdir tensorboard_logs/logs_train_clf/alexNet/ \
+tensorboard dev upload --logdir tensorboard_logs/alexNet/ \
     --name "alexNet for GANterfactual RSNA" \
     --description "This is the RSNA classifier from the GANterfactual paper." \
     --one_shot
