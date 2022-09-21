@@ -15,7 +15,6 @@ from tensorflow.python.keras.regularizers import l2
 
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-tensorboard_callback = keras.callbacks.TensorBoard(log_dir="GANterfactual/log")
 np.random.seed(1000)
 dimension = 512
 dataset_path = "../tensorflow_datasets/rsna_data"
@@ -158,6 +157,15 @@ model = get_adapted_alexNet()
 
 train, validation, test = get_data()
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
+tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
+                                    histogram_freq=1,
+                                    write_graph=True,
+                                    write_images=False,
+                                    update_freq='epoch',
+                                    profile_batch=30,
+                                    embeddings_freq=0,
+                                    embeddings_metadata=None
+                                    )
 check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
                                               save_weights_only=True)
 early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=10, restore_best_weights=True)
