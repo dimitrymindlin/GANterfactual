@@ -2,7 +2,7 @@
 source /media/compute/homes/dmindlin/.bashrc
 conda activate medical-decision-support-system
 
-cd /media/compute/homes/dmindlin/medical-decision-support-system
+cd /media/compute/homes/dmindlin/GANterfactual
 
 tensorboard dev upload --logdir tensorboard_logs/logs_train_clf/alexNet/ \
     --name "alexNet for GANterfactual RSNA" \
