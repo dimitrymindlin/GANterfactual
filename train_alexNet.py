@@ -18,7 +18,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
 dimension = 512
 dataset_path = "../tensorflow_datasets/rsna_data"
-TF_LOG_DIR = 'tensorboard_logs/logs_train_clf/alexNet/' + TIMESTAMP + "/"
+TF_LOG_DIR = 'tensorboard_logs/alexNet/' + TIMESTAMP + "/"
 
 
 def get_adapted_alexNet():
