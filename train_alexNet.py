@@ -19,6 +19,9 @@ np.random.seed(1000)
 dimension = 512
 dataset_path = "../tensorflow_datasets/rsna_data"
 TF_LOG_DIR = 'tensorboard_logs/alexNet/' + TIMESTAMP + "/"
+file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
+with file_writer.as_default():
+    tf.summary.text("TS", TIMESTAMP, step=0)
 
 
 def get_adapted_alexNet():
