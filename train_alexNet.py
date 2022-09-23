@@ -12,7 +12,7 @@ from GANterfactual.domain_to_domain_model import Domain2DomainModel
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
-dimension = 512
+image_size = 512
 if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 else:
@@ -31,7 +31,6 @@ def plot_any_img(img):
 
 
 def get_data():
-    image_size = dimension
     batch_size = 32
     # Load rsna_data for training
     train_gen = keras.preprocessing.image.ImageDataGenerator(preprocessing_function=(lambda x: x / 127.5 - 1.))
@@ -49,7 +48,7 @@ def get_data():
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode='categorical',
-        shuffle=True,
+        shuffle=False,
         color_mode='rgb')
 
     test_data = train_gen.flow_from_directory(
@@ -64,14 +63,17 @@ def get_data():
 
 
 # model = get_adapted_alexNet(dimension)
-model = Domain2DomainModel(img_shape=(dimension, dimension, 3)).model()
+model = Domain2DomainModel(img_shape=(image_size, image_size, 3)).model()
 metric_auc = tf.keras.metrics.AUC(curve='ROC', multi_label=True, num_labels=2, from_logits=False)
-model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0001),
+model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
                   loss='categorical_crossentropy',
                   metrics=["accuracy", metric_auc])
 # model.summary()
 
 train, validation, test = get_data()
+
+# Explore data
+print()
 
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
