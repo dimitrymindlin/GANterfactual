@@ -65,6 +65,10 @@ def get_data():
 
 # model = get_adapted_alexNet(dimension)
 model = Domain2DomainModel(img_shape=(dimension, dimension, 3)).model()
+metric_auc = tf.keras.metrics.AUC(curve='ROC', multi_label=True, num_labels=2, from_logits=False)
+model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0001),
+                  loss='categorical_crossentropy',
+                  metrics=["accuracy", metric_auc])
 # model.summary()
 
 train, validation, test = get_data()
