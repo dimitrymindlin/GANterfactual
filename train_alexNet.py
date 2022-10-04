@@ -73,7 +73,7 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 train, validation, test = get_data(batch_size=batch_size)
 
 # Explore data
-# print()
+print()
 
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
@@ -87,14 +87,14 @@ tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
                                                    )
 check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
                                               save_weights_only=True)
-early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=10, restore_best_weights=True)
+early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=5, restore_best_weights=True)
 
 if __name__ == "__main__":
     hist = model.fit_generator(train,
                                epochs=1000,
                                validation_data=validation,
                                callbacks=[check_point, early_stopping, tensorboard_callback],
-                               steps_per_epoch=len(train),
+                               steps_per_epoch=len(train) * batch_size,
                                validation_steps=len(validation))
 
     print("Training done, best weights saved. Trying to save whole model:")
