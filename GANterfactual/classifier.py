@@ -111,7 +111,7 @@ def build_classifier(img_shape):
     return Model(input, x)
 
 def get_adapted_alexNet(dimension):
-    input = Input(shape=(dimension, dimension, 3))
+    input = Input(shape=(dimension, dimension, 1))
 
     # 1st Convolutional Layer
     x = Conv2D(filters=96,

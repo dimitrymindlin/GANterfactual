@@ -41,7 +41,7 @@ def get_data(batch_size):
         batch_size=batch_size,
         class_mode='categorical',
         shuffle=True,
-        color_mode='rgb')
+        color_mode='grayscale')
 
     validation_data = train_gen.flow_from_directory(
         directory=f"{TFDS_PATH}/validation",
@@ -49,13 +49,13 @@ def get_data(batch_size):
         batch_size=batch_size,
         class_mode='categorical',
         shuffle=False,
-        color_mode='rgb')
+        color_mode='grayscale')
 
     test_data = train_gen.flow_from_directory(
         directory=f"{TFDS_PATH}/test",
         target_size=(image_size, image_size),
         batch_size=batch_size,
-        class_mode='categorical',
+        class_mode='grayscale',
         shuffle=False,
         color_mode='rgb')
 
@@ -73,6 +73,9 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 train, validation, test = get_data(batch_size=batch_size)
 
 # Explore data
+plot_any_img(train[0][0][0])
+plot_any_img(validation[0][0][0])
+plot_any_img(test[0][0][0])
 print()
 
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
