@@ -95,7 +95,7 @@ if __name__ == "__main__":
                                validation_data=validation,
                                callbacks=[check_point, early_stopping, tensorboard_callback],
                                steps_per_epoch=len(train) * batch_size,
-                               validation_steps=len(validation))
+                               validation_steps=len(validation) * batch_size)
 
     print("Training done, best weights saved. Trying to save whole model:")
     # model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
