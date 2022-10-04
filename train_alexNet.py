@@ -13,7 +13,7 @@ TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
 batch_size = 32
-image_size = 128
+image_size = 512
 if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 else:
@@ -55,9 +55,9 @@ def get_data(batch_size):
         directory=f"{TFDS_PATH}/test",
         target_size=(image_size, image_size),
         batch_size=batch_size,
-        class_mode='grayscale',
+        class_mode='categorical',
         shuffle=False,
-        color_mode='rgb')
+        color_mode='grayscale')
 
     return train_data, validation_data, test_data
 
