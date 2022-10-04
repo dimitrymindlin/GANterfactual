@@ -13,7 +13,7 @@ TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
 batch_size = 32
-image_size = 512
+image_size = 128
 if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 else:
