@@ -6,7 +6,7 @@ import tensorflow.keras as keras
 
 
 class DataLoader():
-    def __init__(self, dataset_name=None, img_res=(128, 128)):
+    def __init__(self, dataset_name=None, img_res=(512, 512)):
         self.dataset_name = dataset_name
         self.img_res = img_res
 
