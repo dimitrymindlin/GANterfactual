@@ -76,30 +76,31 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 train, validation, test = get_data(batch_size=batch_size)
 
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
-tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
-                                                   histogram_freq=0,
-                                                   write_graph=True,
-                                                   write_images=False,
-                                                   update_freq='epoch',
-                                                   profile_batch=30,
-                                                   embeddings_freq=0,
-                                                   embeddings_metadata=None
-                                                   )
-check_point = keras.callbacks.ModelCheckpoint(weights_path,
-                                              save_best_only=True,
-                                              monitor='val_accuracy',
-                                              mode='auto',
-                                              save_weights_only=True,
-                                              verbose=0,
-                                              save_freq='epoch'
-                                              )
-
-early_stopping = keras.callbacks.EarlyStopping(monitor="val_accuracy",
-                                               patience=8,
-                                               mode="max",
-                                               baseline=None,
-                                               restore_best_weights=True,
-                                               )
+my_callbacks = [
+    keras.callbacks.ModelCheckpoint(filepath=weights_path,
+                                    # Callback to save the Keras model or model weights at some frequency.
+                                    monitor='val_accuracy',
+                                    verbose=0,
+                                    save_best_only=True,
+                                    save_weights_only=True,
+                                    mode='auto',
+                                    save_freq='epoch'),
+    keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
+                                histogram_freq=1,
+                                write_graph=True,
+                                write_images=False,
+                                update_freq='epoch',
+                                profile_batch=30,
+                                embeddings_freq=0,
+                                embeddings_metadata=None
+                                ),
+    keras.callbacks.EarlyStopping(monitor="val_accuracy",
+                                  patience=4,
+                                  mode="max",
+                                  baseline=None,
+                                  restore_best_weights=True,
+                                  )
+]
 
 if __name__ == "__main__":
     hist = model.fit(train,
@@ -107,7 +108,7 @@ if __name__ == "__main__":
                      class_weight=None,
                      epochs=1000,
                      validation_data=validation,
-                     callbacks=[check_point, early_stopping, tensorboard_callback])
+                     callbacks=my_callbacks)
 
     print("Training done, best weights saved. Trying to save whole model:")
     # model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
