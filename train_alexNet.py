@@ -23,9 +23,6 @@ else:
     TFDS_PATH = "../tensorflow_datasets/rsna_data"
 TF_LOG_DIR = 'tensorboard_logs/alexNet/' + TIMESTAMP + "/"
 file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
-with file_writer.as_default():
-    tf.summary.text("TS", TIMESTAMP, step=0)
-
 
 def plot_any_img(img):
     if np.min(img) < 0:
@@ -74,6 +71,10 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 # model.summary()
 
 train, validation, test = get_data(batch_size=batch_size)
+
+with file_writer.as_default():
+    tf.summary.text("TS", TIMESTAMP, step=0)
+    tf.summary.text("test", "test", step=0)
 
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
 my_callbacks = [
