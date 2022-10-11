@@ -9,9 +9,6 @@ from PIL import ImageFile
 from GANterfactual.classifier import get_adapted_alexNet
 from GANterfactual.domain_to_domain_model import Domain2DomainModel
 
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-tf.debugging.set_log_device_placement(True)
-
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
@@ -23,6 +20,9 @@ else:
     TFDS_PATH = "../tensorflow_datasets/rsna_data"
 TF_LOG_DIR = 'tensorboard_logs/alexNet/' + TIMESTAMP + "/"
 file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
+with file_writer.as_default():
+    tf.summary.text("TS", TIMESTAMP, step=0)
+
 
 def plot_any_img(img):
     if np.min(img) < 0:
@@ -72,44 +72,27 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 
 train, validation, test = get_data(batch_size=batch_size)
 
-with file_writer.as_default():
-    tf.summary.text("TS", TIMESTAMP, step=0)
-    tf.summary.text("test", "test", step=0)
-
 weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
-my_callbacks = [
-    keras.callbacks.ModelCheckpoint(filepath=weights_path,
-                                    # Callback to save the Keras model or model weights at some frequency.
-                                    monitor='val_accuracy',
-                                    verbose=0,
-                                    save_best_only=True,
-                                    save_weights_only=True,
-                                    mode='auto',
-                                    save_freq='epoch'),
-    keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
-                                histogram_freq=1,
-                                write_graph=True,
-                                write_images=False,
-                                update_freq='epoch',
-                                profile_batch=30,
-                                embeddings_freq=0,
-                                embeddings_metadata=None
-                                ),
-    keras.callbacks.EarlyStopping(monitor="val_accuracy",
-                                  patience=4,
-                                  mode="max",
-                                  baseline=None,
-                                  restore_best_weights=True,
-                                  )
-]
+tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
+                                                   histogram_freq=1,
+                                                   write_graph=True,
+                                                   write_images=False,
+                                                   update_freq='epoch',
+                                                   profile_batch=30,
+                                                   embeddings_freq=0,
+                                                   embeddings_metadata=None
+                                                   )
+check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
+                                              save_weights_only=True)
+early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=5, restore_best_weights=True)
 
 if __name__ == "__main__":
-    hist = model.fit(train,
-                     verbose=1,
-                     class_weight=None,
-                     epochs=1000,
-                     validation_data=validation,
-                     callbacks=my_callbacks)
+    hist = model.fit_generator(train,
+                               epochs=1000,
+                               validation_data=validation,
+                               callbacks=[check_point, early_stopping, tensorboard_callback],
+                               steps_per_epoch=len(train) * batch_size,
+                               validation_steps=len(validation) * batch_size)
 
     print("Training done, best weights saved. Trying to save whole model:")
     # model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
