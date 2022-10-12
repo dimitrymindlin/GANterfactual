@@ -1,6 +1,6 @@
 #!/bin/bash
 source /media/compute/homes/dmindlin/.bashrc
-conda activate GANterfactual
+conda activate medical-decision-support-system
 
 cd /media/compute/homes/dmindlin/GANterfactual
 
