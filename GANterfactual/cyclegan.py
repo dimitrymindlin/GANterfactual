@@ -59,18 +59,18 @@ class CycleGAN():
 
         # Load discriminators from disk
         self.d_N = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_n.h5'),
-                                           custom_objects=custom_objects)
+                                              custom_objects=custom_objects)
         self.d_N._name = "d_N"
         self.d_P = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_p.h5'),
-                                           custom_objects=custom_objects)
+                                              custom_objects=custom_objects)
         self.d_P._name = "d_P"
 
         # Load generators from disk
         self.g_NP = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'generator_np.h5'),
-                                            custom_objects=custom_objects)
+                                               custom_objects=custom_objects)
         self.g_NP._name = "g_NP"
         self.g_PN = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'generator_pn.h5'),
-                                            custom_objects=custom_objects)
+                                               custom_objects=custom_objects)
         self.g_PN._name = "g_PN"
 
         self.build_combined(classifier_path, classifier_weight)
@@ -217,7 +217,7 @@ class CycleGAN():
                     self.sample_images(epoch, batch_i, imgs_N[0], imgs_P[0])
 
             # Comment this in if you want to save checkpoints:
-            #self.save(os.path.join('..','models','GANterfactual','ep_' + str(epoch)))
+            # self.save(os.path.join('..','models','GANterfactual','ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
         os.makedirs('images', exist_ok=True)
@@ -287,11 +287,3 @@ class CycleGAN():
         data_loader.save_single(reconstructed, reconstructed_out_path)
 
         return [pred_original, pred_translated, pred_reconstructed]
-
-
-if __name__ == '__main__':
-    gan = CycleGAN()
-    gan.construct(classifier_path=f"../checkpoints/inception/model", classifier_weight=1)
-    gan.train(dataset_name=local_path, epochs=20, batch_size=1, print_interval=10,
-          sample_interval=100)
-    gan.save(os.path.join('.', 'models', 'GANterfactual_inception'))
