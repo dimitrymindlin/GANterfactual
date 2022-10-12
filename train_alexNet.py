@@ -19,7 +19,6 @@ if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 else:
     TFDS_PATH = "../tensorflow_datasets/rsna_data"
-    TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 TF_LOG_DIR = f'tensorboard_logs/{MODEL}/' + TIMESTAMP + "/"
 ckp_path = f"checkpoints/{MODEL}/{MODEL}_{TIMESTAMP}"
 file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
