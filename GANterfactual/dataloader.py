@@ -22,9 +22,11 @@ class DataLoader():
         flow_args = dict(
             class_mode=None,
             batch_size=batch_size,
-            color_mode="grayscale",
             shuffle=True,
             target_size=self.img_res,
+            color_mode='rgb',
+            classes={'normal': 0,
+                     'abnormal': 1}
         )
 
         subdir = "validation" if is_testing else "train"
