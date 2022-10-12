@@ -118,47 +118,31 @@ class CycleGAN():
         valid_N = self.d_N(fake_N)
         valid_P = self.d_P(fake_P)
 
-        if classifier_path is not None and os.path.isfile(classifier_path):
-            self.classifier = load_classifier(classifier_path, self.img_shape)
-            self.classifier._name = "classifier"
-            self.classifier.trainable = False
+        self.classifier = load_classifier(classifier_path, self.img_shape)
+        self.classifier._name = "classifier"
+        self.classifier.trainable = False
 
-            class_N_loss = self.classifier(fake_N)
-            class_P_loss = self.classifier(fake_P)
+        class_N_loss = self.classifier(fake_N)
+        class_P_loss = self.classifier(fake_P)
 
-            # Combined model trains generators to fool discriminators
-            self.combined = Model(inputs=[img_N, img_P],
-                                  outputs=[valid_N, valid_P,
-                                           class_N_loss, class_P_loss,
-                                           reconstr_N, reconstr_P,
-                                           img_N_id, img_P_id])
+        # Combined model trains generators to fool discriminators
+        self.combined = Model(inputs=[img_N, img_P],
+                              outputs=[valid_N, valid_P,
+                                       class_N_loss, class_P_loss,
+                                       reconstr_N, reconstr_P,
+                                       img_N_id, img_P_id])
 
-            self.combined.compile(loss=['mse', 'mse',
-                                        'mse', 'mse',
-                                        'mae', 'mae',
-                                        'mae', 'mae'],
-                                  loss_weights=[1, 1,
-                                                classifier_weight, classifier_weight,
-                                                self.lambda_cycle, self.lambda_cycle,
-                                                self.lambda_id, self.lambda_id],
-                                  optimizer=optimizer)
+        self.combined.compile(loss=['mse', 'mse',
+                                    'mse', 'mse',
+                                    'mae', 'mae',
+                                    'mae', 'mae'],
+                              loss_weights=[1, 1,
+                                            classifier_weight, classifier_weight,
+                                            self.lambda_cycle, self.lambda_cycle,
+                                            self.lambda_id, self.lambda_id],
+                              optimizer=optimizer)
 
-        else:
-            # Combined model trains generators to fool discriminators
-            self.combined = Model(inputs=[img_N, img_P],
-                                  outputs=[valid_N, valid_P,
-                                           reconstr_N, reconstr_P,
-                                           img_N_id, img_P_id])
-
-            self.combined.compile(loss=['mse', 'mse',
-                                        'mae', 'mae',
-                                        'mae', 'mae'],
-                                  loss_weights=[1, 1,
-                                                self.lambda_cycle, self.lambda_cycle,
-                                                self.lambda_id, self.lambda_id],
-                                  optimizer=optimizer)
-
-    def train(self, dataset_name, epochs, batch_size=1, train_N="NEGATIVE", train_P="POSITIVE", print_interval=100,
+    def train(self, dataset_name, epochs, batch_size=1, train_N="normal", train_P="abnormal", print_interval=100,
               sample_interval=1000):
 
         # Configure rsna_data loader
@@ -250,10 +234,10 @@ class CycleGAN():
         reconstr_P = self.g_NP.predict(fake_N)
 
         imgs = [img_N, fake_P, reconstr_N, img_P, fake_N, reconstr_P]
-        classification = [['NEGATIVE', 'POSITIVE'][int(np.argmax(self.classifier.predict(x)))] for x in imgs]
+        classification = [['normal', 'abnormal'][int(np.argmax(self.classifier.predict(x)))] for x in imgs]
 
         gen_imgs = np.concatenate(imgs)
-        correct_classification = ['NEGATIVE', 'POSITIVE', 'NEGATIVE', 'POSITIVE', 'NEGATIVE', 'POSITIVE']
+        correct_classification = ['normal', 'abnormal', 'normal', 'abnormal', 'normal', 'abnormal']
 
         # Rescale images 0 - 1
         gen_imgs = 0.5 * gen_imgs + 0.5
@@ -280,11 +264,11 @@ class CycleGAN():
 
         pred_original = self.classifier.predict(original)
         if int(np.argmax(pred_original)) == 0:
-            print("PREDICTION -- NEGATIVE")
+            print("PREDICTION -- normal")
             translated = self.g_NP.predict(original)
             reconstructed = self.g_PN.predict(translated)
         else:
-            print("PREDICTION -- POSITIVE")
+            print("PREDICTION -- abnormal")
             translated = self.g_PN.predict(original)
             reconstructed = self.g_NP.predict(translated)
 
@@ -292,7 +276,7 @@ class CycleGAN():
         pred_reconstructed = self.classifier.predict(reconstructed)
 
         if force_original_aspect_ratio:
-            orig_no_res = keras.preprocessing.image.load_img(original_in_path)
+            orig_no_res = tf.keras.preprocessing.image.load_img(original_in_path)
             translated = resize(translated[0], (orig_no_res.height, orig_no_res.width))
             reconstructed = resize(reconstructed[0], (orig_no_res.height, orig_no_res.width))
         else:
