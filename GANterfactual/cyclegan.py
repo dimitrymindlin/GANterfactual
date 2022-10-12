@@ -1,15 +1,12 @@
 from __future__ import print_function, division
-
+import tensorflow as tf
 import datetime
 import os
-
-import keras
 import matplotlib.pyplot as plt
 import numpy as np
-
+from tensorflow.keras.optimizers import Adam
 from skimage.transform import resize
-from tensorflow.python.keras import Input, Model
-from tensorflow.python.keras.optimizer_v2.adam import Adam
+from tensorflow.keras import Input, Model
 
 from tensorflow_addons.layers import InstanceNormalization
 
