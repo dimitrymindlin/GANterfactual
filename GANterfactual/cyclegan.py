@@ -10,9 +10,9 @@ from tensorflow.keras import Input, Model
 
 from tensorflow_addons.layers import InstanceNormalization
 
-from dataloader import DataLoader
-from discriminator import build_discriminator
-from generator import build_generator
+from GANterfactual.dataloader import DataLoader
+from GANterfactual.discriminator import build_discriminator
+from GANterfactual.generator import build_generator
 
 
 class CycleGAN():
