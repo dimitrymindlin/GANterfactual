@@ -16,11 +16,11 @@ class DataLoader():
             "rescale": None,
         }
 
-    def load_batch(self, train_N="NEGATIVE", train_P="POSITIVE", batch_size=16, is_testing=False):
+    def load_batch(self, train_N="normal", train_P="abnormal", batch_size=16, is_testing=False):
         generator = keras.preprocessing.image.ImageDataGenerator(**self.image_gen_config)
 
         flow_args = dict(
-            class_mode="categorical",
+            class_mode=None,
             batch_size=batch_size,
             color_mode="grayscale",
             shuffle=True,
@@ -39,10 +39,7 @@ class DataLoader():
         n_batches = max(len(negative_flow), len(positive_flow))
 
         for b_normal, b_pneumo, _ in zip(negative_flow, positive_flow, range(n_batches)):
-            normal, _ = b_normal
-            pneumo, _ = b_pneumo
-
-            yield normal, pneumo
+            yield b_normal, b_pneumo
 
     def load_single(self, path):
         img = keras.preprocessing.image.load_img(path, color_mode="grayscale", target_size=self.img_res)
