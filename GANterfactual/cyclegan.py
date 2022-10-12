@@ -10,10 +10,10 @@ from tensorflow.keras import Input, Model
 
 from tensorflow_addons.layers import InstanceNormalization
 
-from classifier import load_classifier
 from dataloader import DataLoader
 from discriminator import build_discriminator
 from generator import build_generator
+
 
 class CycleGAN():
 
@@ -86,7 +86,7 @@ class CycleGAN():
         self.g_NP.save(os.path.join(cyclegan_folder, 'generator_np.h5'))
         self.g_PN.save(os.path.join(cyclegan_folder, 'generator_pn.h5'))
 
-    def build_combined(self, classifier_path=None, classifier_weight=None):
+    def build_combined(self, classifier_path, classifier_weight=None):
         optimizer = Adam(0.0002, 0.5)
 
         self.d_N.compile(loss='mse',
@@ -118,7 +118,7 @@ class CycleGAN():
         valid_N = self.d_N(fake_N)
         valid_P = self.d_P(fake_P)
 
-        self.classifier = load_classifier(classifier_path, self.img_shape)
+        self.classifier = tf.keras.models.load_model(classifier_path, compile=False)
         self.classifier._name = "classifier"
         self.classifier.trainable = False
 
