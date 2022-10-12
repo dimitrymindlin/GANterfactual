@@ -19,6 +19,7 @@ if len(tf.config.list_physical_devices('GPU')) == 0:
 else:
     TFDS_PATH = "../tensorflow_datasets/rsna_data"
 TF_LOG_DIR = 'tensorboard_logs/alexNet/' + TIMESTAMP + "/"
+weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.ckpt"
 file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
 with file_writer.as_default():
     tf.summary.text("TS", TIMESTAMP, step=0)
@@ -71,8 +72,12 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 # model.summary()
 
 train, validation, test = get_data(batch_size=batch_size)
-
-weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.ckpt"
+reduce_on_plateau = keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy',
+                                                      factor=0.1,
+                                                      patience=3,
+                                                      min_delta=0.001,
+                                                      verbose=1,
+                                                      min_lr=1e-8),
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
                                                    histogram_freq=1,
                                                    write_graph=True,
@@ -84,13 +89,13 @@ tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
                                                    )
 check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
                                               save_weights_only=True)
-early_stopping = keras.callbacks.EarlyStopping(min_delta=0.001, patience=5, restore_best_weights=True)
+early_stopping = keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True, monitor="val_accuracy")
 
 if __name__ == "__main__":
     hist = model.fit_generator(train,
                                epochs=1000,
                                validation_data=validation,
-                               callbacks=[check_point, early_stopping, tensorboard_callback],
+                               callbacks=[check_point, early_stopping, tensorboard_callback, reduce_on_plateau],
                                steps_per_epoch=len(train) * batch_size,
                                validation_steps=len(validation) * batch_size)
 
