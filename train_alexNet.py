@@ -10,6 +10,7 @@ from GANterfactual.classifier import get_adapted_alexNet
 from GANterfactual.domain_to_domain_model import Domain2DomainModel
 
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
+MODEL = "inception"
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
 batch_size = 32
@@ -18,8 +19,8 @@ if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 else:
     TFDS_PATH = "../tensorflow_datasets/rsna_data"
-TF_LOG_DIR = 'tensorboard_logs/alexNet/' + TIMESTAMP + "/"
-weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.ckpt"
+TF_LOG_DIR = f'tensorboard_logs/{MODEL}/' + TIMESTAMP + "/"
+ckp_path = f"checkpoints/{MODEL}/{MODEL}_{TIMESTAMP}"
 file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
 with file_writer.as_default():
     tf.summary.text("TS", TIMESTAMP, step=0)
@@ -63,12 +64,12 @@ def get_data(batch_size):
     return train_data, validation_data, test_data
 
 
-model = get_adapted_alexNet(image_size)
-"""model = Domain2DomainModel(img_shape=(image_size, image_size, 3)).model()
+# model = get_adapted_alexNet(image_size)
+model = Domain2DomainModel(img_shape=(image_size, image_size, 3)).model()
 metric_auc = tf.keras.metrics.AUC(curve='ROC', multi_label=True, num_labels=2, from_logits=False)
 model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
-                  loss='categorical_crossentropy',
-                  metrics=["accuracy", metric_auc])"""
+              loss='categorical_crossentropy',
+              metrics=["accuracy", metric_auc])
 # model.summary()
 
 train, validation, test = get_data(batch_size=batch_size)
@@ -87,24 +88,18 @@ tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
                                                    embeddings_freq=0,
                                                    embeddings_metadata=None
                                                    )
-check_point = keras.callbacks.ModelCheckpoint(weights_path, save_best_only=True, monitor='val_accuracy', mode='max',
+check_point = keras.callbacks.ModelCheckpoint(ckp_path, save_best_only=True, monitor='val_accuracy', mode='max',
                                               save_weights_only=True)
 early_stopping = keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True, monitor="val_accuracy")
 
 if __name__ == "__main__":
     hist = model.fit_generator(train,
-                               epochs=1000,
+                               epochs=100,
                                validation_data=validation,
                                callbacks=[check_point, early_stopping, tensorboard_callback, reduce_on_plateau],
                                steps_per_epoch=len(train) * batch_size,
                                validation_steps=len(validation) * batch_size)
 
-    print("Training done, best weights saved. Trying to save whole model:")
-    # model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
-    model.load_weights(weights_path)
-    print("Loaded weights")
-    """keras.models.save_model(model, os.path.join('', 'models', 'classifier', f'alexNet_{TIMESTAMP}_model.h5'),
-                               include_optimizer=True, )"""
     print("Train History")
     print(hist)
     print("Evaluation")
@@ -113,3 +108,4 @@ if __name__ == "__main__":
     result_matrix = [[k, str(w)] for k, w in result.items()]
     for metric, value in zip(model.metrics_names, result):
         print(metric, ": ", value)
+    model.save(ckp_path + 'model')
