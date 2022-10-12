@@ -58,18 +58,18 @@ class CycleGAN():
         custom_objects = {"InstanceNormalization": InstanceNormalization}
 
         # Load discriminators from disk
-        self.d_N = keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_n.h5'),
+        self.d_N = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_n.h5'),
                                            custom_objects=custom_objects)
         self.d_N._name = "d_N"
-        self.d_P = keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_p.h5'),
+        self.d_P = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'discriminator_p.h5'),
                                            custom_objects=custom_objects)
         self.d_P._name = "d_P"
 
         # Load generators from disk
-        self.g_NP = keras.models.load_model(os.path.join(cyclegan_folder, 'generator_np.h5'),
+        self.g_NP = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'generator_np.h5'),
                                             custom_objects=custom_objects)
         self.g_NP._name = "g_NP"
-        self.g_PN = keras.models.load_model(os.path.join(cyclegan_folder, 'generator_pn.h5'),
+        self.g_PN = tf.keras.models.load_model(os.path.join(cyclegan_folder, 'generator_pn.h5'),
                                             custom_objects=custom_objects)
         self.g_PN._name = "g_PN"
 
