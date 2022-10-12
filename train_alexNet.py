@@ -19,6 +19,7 @@ if len(tf.config.list_physical_devices('GPU')) == 0:
     TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 else:
     TFDS_PATH = "../tensorflow_datasets/rsna_data"
+    TFDS_PATH = "/Users/dimitrymindlin/tensorflow_datasets/rsna_data"
 TF_LOG_DIR = f'tensorboard_logs/{MODEL}/' + TIMESTAMP + "/"
 ckp_path = f"checkpoints/{MODEL}/{MODEL}_{TIMESTAMP}"
 file_writer = tf.summary.create_file_writer(TF_LOG_DIR)
@@ -43,7 +44,10 @@ def get_data(batch_size):
         batch_size=batch_size,
         class_mode='categorical',
         shuffle=True,
-        color_mode='grayscale')
+        color_mode='rgb',
+        classes={'normal': 0,
+                 'abnormal': 1}
+    )
 
     validation_data = train_gen.flow_from_directory(
         directory=f"{TFDS_PATH}/validation",
@@ -51,7 +55,10 @@ def get_data(batch_size):
         batch_size=batch_size,
         class_mode='categorical',
         shuffle=False,
-        color_mode='grayscale')
+        color_mode='rgb',
+        classes={'normal': 0,
+                 'abnormal': 1}
+    )
 
     test_data = train_gen.flow_from_directory(
         directory=f"{TFDS_PATH}/test",
@@ -59,46 +66,50 @@ def get_data(batch_size):
         batch_size=batch_size,
         class_mode='categorical',
         shuffle=False,
-        color_mode='grayscale')
+        color_mode='rgb',
+        classes={'normal': 0,
+                 'abnormal': 1}
+    )
 
     return train_data, validation_data, test_data
 
 
-# model = get_adapted_alexNet(image_size)
-model = Domain2DomainModel(img_shape=(image_size, image_size, 3)).model()
-metric_auc = tf.keras.metrics.AUC(curve='ROC', multi_label=True, num_labels=2, from_logits=False)
-model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
-              loss='categorical_crossentropy',
-              metrics=["accuracy", metric_auc])
-# model.summary()
-
-train, validation, test = get_data(batch_size=batch_size)
-reduce_on_plateau = keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy',
-                                                      factor=0.1,
-                                                      patience=3,
-                                                      min_delta=0.001,
-                                                      verbose=1,
-                                                      min_lr=1e-8),
-tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
-                                                   histogram_freq=1,
-                                                   write_graph=True,
-                                                   write_images=False,
-                                                   update_freq='epoch',
-                                                   profile_batch=30,
-                                                   embeddings_freq=0,
-                                                   embeddings_metadata=None
-                                                   )
-check_point = keras.callbacks.ModelCheckpoint(ckp_path, save_best_only=True, monitor='val_accuracy', mode='max',
-                                              save_weights_only=True)
-early_stopping = keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True, monitor="val_accuracy")
-
 if __name__ == "__main__":
-    hist = model.fit_generator(train,
-                               epochs=100,
-                               validation_data=validation,
-                               callbacks=[check_point, early_stopping, tensorboard_callback, reduce_on_plateau],
-                               steps_per_epoch=len(train) * batch_size,
-                               validation_steps=len(validation) * batch_size)
+    # model = get_adapted_alexNet(image_size)
+    model = Domain2DomainModel(img_shape=(image_size, image_size, 3)).model()
+    metric_auc = tf.keras.metrics.AUC(curve='ROC', multi_label=True, num_labels=2, from_logits=False)
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
+                  loss='categorical_crossentropy',
+                  metrics=["accuracy", metric_auc])
+    # model.summary()
+
+    train, validation, test = get_data(batch_size=batch_size)
+    reduce_on_plateau = keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy',
+                                                          factor=0.1,
+                                                          patience=3,
+                                                          min_delta=0.001,
+                                                          verbose=1,
+                                                          min_lr=1e-8),
+    tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
+                                                       histogram_freq=1,
+                                                       write_graph=True,
+                                                       write_images=False,
+                                                       update_freq='epoch',
+                                                       profile_batch=30,
+                                                       embeddings_freq=0,
+                                                       embeddings_metadata=None
+                                                       )
+    check_point = keras.callbacks.ModelCheckpoint(ckp_path, save_best_only=True, monitor='val_accuracy', mode='max',
+                                                  save_weights_only=True)
+    early_stopping = keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True, monitor="val_accuracy")
+
+    hist = model.fit(train,
+                     epochs=100,
+                     validation_data=validation,
+                     callbacks=[check_point, early_stopping, tensorboard_callback, reduce_on_plateau],
+                     verbose=1,
+                     class_weight=None
+                     )
 
     print("Train History")
     print(hist)
