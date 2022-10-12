@@ -2,17 +2,17 @@ from __future__ import print_function, division
 import tensorflow.keras as keras
 from tensorflow.keras.layers import BatchNormalization
 
-from tensorflow.python.keras import Input, Model
-from tensorflow.python.keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
-from tensorflow.python.keras.optimizer_v2.gradient_descent import SGD
-from PIL import ImageFile
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import Conv2D, Activation, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.regularizers import L2
+
 
 # The trained classifier is loaded.
 # Rewrite this function if you want to use another model architecture than our modified AlexNET.
 # A model, which provides a 'predict' function, has to be returned.
 def load_classifier(path, img_shape):
-    original = keras.models.load(path)
+    """original = keras.models.load_model(path)
     classifier = build_classifier(img_shape)
 
     counter = 0
@@ -21,9 +21,9 @@ def load_classifier(path, img_shape):
         classifier.layers[counter].set_weights(layer.get_weights())
         counter += 1
 
-    classifier.summary()
+    classifier.summary()"""
 
-    return classifier
+    return keras.models.load_model(path, compile=False)
 
 
 def build_classifier(img_shape):
@@ -110,6 +110,7 @@ def build_classifier(img_shape):
 
     return Model(input, x)
 
+
 def get_adapted_alexNet(dimension):
     input = Input(shape=(dimension, dimension, 1))
 
@@ -118,8 +119,8 @@ def get_adapted_alexNet(dimension):
                kernel_size=(11, 11),
                strides=(4, 4),
                padding='valid',
-               kernel_regularizer=l2(0.001),
-               bias_regularizer=l2(0.001))(input)
+               kernel_regularizer=L2(0.001),
+               bias_regularizer=L2(0.001))(input)
     x = Activation('relu')(x)
     # Pooling
     x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='valid')(x)
@@ -131,8 +132,8 @@ def get_adapted_alexNet(dimension):
                kernel_size=(11, 11),
                strides=(1, 1),
                padding='valid',
-               kernel_regularizer=l2(0.001),
-               bias_regularizer=l2(0.001))(x)
+               kernel_regularizer=L2(0.001),
+               bias_regularizer=L2(0.001))(x)
     x = Activation('relu')(x)
     # Pooling
     x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='valid')(x)
@@ -153,8 +154,8 @@ def get_adapted_alexNet(dimension):
                kernel_size=(3, 3),
                strides=(1, 1),
                padding='valid',
-               kernel_regularizer=l2(0.001),
-               bias_regularizer=l2(0.001))(x)
+               kernel_regularizer=L2(0.001),
+               bias_regularizer=L2(0.001))(x)
     x = Activation('relu')(x)
     # Batch Normalisation
     x = BatchNormalization()(x)
@@ -174,8 +175,8 @@ def get_adapted_alexNet(dimension):
     x = Flatten()(x)
     # 1st Dense Layer
     x = Dense(4096,
-              kernel_regularizer=l2(0.001),
-              bias_regularizer=l2(0.001))(x)
+              kernel_regularizer=L2(0.001),
+              bias_regularizer=L2(0.001))(x)
     x = Activation('relu')(x)
     # Add Dropout to prevent overfitting
     x = Dropout(0.4)(x)
@@ -183,7 +184,7 @@ def get_adapted_alexNet(dimension):
     x = BatchNormalization()(x)
 
     # 2nd Dense Layer
-    x = Dense(4096, kernel_regularizer=l2(0.001), bias_regularizer=l2(0.001))(x)
+    x = Dense(4096, kernel_regularizer=L2(0.001), bias_regularizer=L2(0.001))(x)
     x = Activation('relu')(x)
     # Add Dropout
     x = Dropout(0.4)(x)
@@ -191,7 +192,7 @@ def get_adapted_alexNet(dimension):
     x = BatchNormalization()(x)
 
     # 3rd Dense Layer
-    x = Dense(1000, kernel_regularizer=l2(0.001), bias_regularizer=l2(0.001))(x)
+    x = Dense(1000, kernel_regularizer=L2(0.001), bias_regularizer=L2(0.001))(x)
     x = Activation('relu')(x)
     # Add Dropout
     x = Dropout(0.4)(x)
