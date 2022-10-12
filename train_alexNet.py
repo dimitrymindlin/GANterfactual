@@ -72,7 +72,7 @@ model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.00001),
 
 train, validation, test = get_data(batch_size=batch_size)
 
-weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.h5"
+weights_path = f"checkpoints/alexNet/alexNet_{TIMESTAMP}.ckpt"
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=TF_LOG_DIR,
                                                    histogram_freq=1,
                                                    write_graph=True,
@@ -98,8 +98,8 @@ if __name__ == "__main__":
     # model.save(os.path.join('', 'models', 'classifier', 'model.h5'), include_optimizer=False)
     model.load_weights(weights_path)
     print("Loaded weights")
-    tf.keras.models.save_model(model, os.path.join('', 'models', 'classifier', f'alexNet_{TIMESTAMP}_model.h5'),
-                               include_optimizer=True, )
+    """keras.models.save_model(model, os.path.join('', 'models', 'classifier', f'alexNet_{TIMESTAMP}_model.h5'),
+                               include_optimizer=True, )"""
     print("Train History")
     print(hist)
     print("Evaluation")
