@@ -24,7 +24,7 @@ class DataLoader():
             batch_size=batch_size,
             shuffle=True,
             target_size=self.img_res,
-            color_mode='rgb',
+            color_mode='grayscale',
             classes={'normal': 0,
                      'abnormal': 1}
         )
