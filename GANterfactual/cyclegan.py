@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.optimizers import Adam
 from skimage.transform import resize
-from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
 
 from tensorflow_addons.layers import InstanceNormalization
 
