@@ -22,7 +22,7 @@ class CycleGAN():
         # Input shape
         self.img_rows = 512
         self.img_cols = 512
-        self.channels = 3
+        self.channels = 1
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
 
         # Calculate output shape of D (PatchGAN)
