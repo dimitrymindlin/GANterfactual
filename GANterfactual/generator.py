@@ -1,5 +1,4 @@
-from tensorflow.keras.layers import Dropout, LeakyReLU
-from tensorflow.keras.layers import Input, Concatenate, UpSampling2D, Conv2D
+from tensorflow.keras.layers import Dropout, LeakyReLU, Input, Concatenate, UpSampling2D, Conv2D
 from tensorflow.keras.models import Model
 from tensorflow_addons.layers import InstanceNormalization
 
