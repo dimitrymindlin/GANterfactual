@@ -1,6 +1,5 @@
 from tensorflow.keras.layers import Input, Conv2D, LeakyReLU
 from tensorflow.keras.models import Model
-import tensorflow_addons as tfa
 from tensorflow_addons.layers import InstanceNormalization
 
 
