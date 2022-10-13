@@ -10,7 +10,7 @@ from GANterfactual.classifier import get_adapted_alexNet
 from GANterfactual.domain_to_domain_model import Domain2DomainModel
 
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d--%H.%M")
-MODEL = "inception"
+MODEL = "inception_rsna"
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 np.random.seed(1000)
 batch_size = 32
