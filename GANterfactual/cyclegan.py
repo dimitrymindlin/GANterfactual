@@ -18,12 +18,13 @@ from GANterfactual.generator import build_generator
 
 class CycleGAN():
 
-    def __init__(self):
+    def __init__(self, execution_ts):
         # Input shape
         self.img_rows = 512
         self.img_cols = 512
         self.channels = 1
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
+        self.execution_ts = execution_ts
 
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
@@ -199,19 +200,15 @@ class CycleGAN():
 
                 elapsed_time = datetime.datetime.now() - start_time
 
-                if self.classifier is not None:
-                    progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
+                """progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
                                    f"[G_loss: {g_loss[0]:.5f}, adv: {np.mean(g_loss[1:3]):.5f}, classifier_N: {g_loss[3]:.5f}, classifier_P: {g_loss[4]:.5f}, " \
                                    f"recon: {np.mean(g_loss[5:7]):.5f}, id: {np.mean(g_loss[7:9]):.5f}] " \
                                    f"time: {elapsed_time}"
-                else:
-                    progress_str = f"[Epoch: {epoch}/{epochs}] [Batch: {batch_i}] [D_loss: {d_loss[0]:.5f}, acc: {100 * d_loss[1]:.5f}] " \
-                                   f"[G_loss: {g_loss[0]:.5f}, adv: {np.mean(g_loss[1:3]):.5f}, recon: {np.mean(g_loss[3:5]):.5f}, id: {np.mean(g_loss[5:7]):.5f}] " \
-                                   f"time: {elapsed_time}"
+
 
                 # Plot the progress
                 if batch_i % print_interval == 0:
-                    print(progress_str)
+                    print(progress_str)"""
 
                 # If at save interval => save generated image samples
                 if batch_i % sample_interval == 0:
@@ -221,7 +218,8 @@ class CycleGAN():
             # self.save(os.path.join('..','models','GANterfactual','ep_' + str(epoch)))
 
     def sample_images(self, epoch, batch_i, testN, testP):
-        os.makedirs('images', exist_ok=True)
+        img_save_path = f'images_{self.execution_ts}'
+        os.makedirs(img_save_path, exist_ok=True)
         r, c = 2, 3
 
         img_N = testN[np.newaxis, :, :, :]
@@ -253,7 +251,7 @@ class CycleGAN():
                 axs[i, j].set_title(f'{titles[j]} ({correct_classification[cnt]})')
                 axs[i, j].axis('off')
                 cnt += 1
-        fig.savefig("images/%d_%d.png" % (epoch, batch_i))
+        fig.savefig(f"{img_save_path}/%d_%d.png" % (epoch, batch_i))
         plt.close()
 
     def predict(self, original_in_path, translated_out_path, reconstructed_out_path, force_original_aspect_ratio=False):
