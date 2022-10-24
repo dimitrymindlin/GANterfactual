@@ -22,7 +22,7 @@ class CycleGAN():
         # Input shape
         self.img_rows = 512
         self.img_cols = 512
-        self.channels = 1
+        self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.execution_ts = execution_ts
 
@@ -53,6 +53,7 @@ class CycleGAN():
         # Build the generators
         self.g_NP = build_generator(self.img_shape, self.gf, self.channels)
         self.g_PN = build_generator(self.img_shape, self.gf, self.channels)
+        self.g_PN.summary()
 
         self.build_combined(classifier_path, classifier_weight)
 
@@ -124,8 +125,11 @@ class CycleGAN():
         self.classifier._name = "classifier"
         self.classifier.trainable = False
 
-        class_N_loss = self.classifier(fake_N)
-        class_P_loss = self.classifier(fake_P)
+        # Turning to RGB for Inception Model
+        fake_N_rgb = tf.image.grayscale_to_rgb(fake_N)
+        fake_P_rgb = tf.image.grayscale_to_rgb(fake_P)
+        class_N_loss = self.classifier(fake_N_rgb)
+        class_P_loss = self.classifier(fake_P_rgb)
 
         # Combined model trains generators to fool discriminators
         self.combined = Model(inputs=[img_N, img_P],
