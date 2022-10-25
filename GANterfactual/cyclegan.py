@@ -16,16 +16,16 @@ from GANterfactual.discriminator import build_discriminator
 from GANterfactual.generator import build_generator
 
 
-class CycleGAN():
+class CycleGAN:
 
-    def __init__(self, execution_ts):
+    def __init__(self, execution_ts, clf_name):
         # Input shape
         self.img_rows = 512
         self.img_cols = 512
         self.channels = 1
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.execution_ts = execution_ts
-
+        self.clf_name = clf_name
         # Calculate output shape of D (PatchGAN)
         patch = int(self.img_rows / 2 ** 4)
         self.disc_patch = (patch, patch, 1)
@@ -124,11 +124,11 @@ class CycleGAN():
         self.classifier._name = "classifier"
         self.classifier.trainable = False
 
-        # Turning to RGB for Inception Model
-        fake_N_rgb = tf.image.grayscale_to_rgb(fake_N)
-        fake_P_rgb = tf.image.grayscale_to_rgb(fake_P)
-        class_N_loss = self.classifier(fake_N_rgb)
-        class_P_loss = self.classifier(fake_P_rgb)
+        if self.clf_name == "inception" and tf.shape(fake_N)[-1] == 1:  # Turning to RGB for Inception Model
+            fake_N = tf.image.grayscale_to_rgb(fake_N)
+            fake_P = tf.image.grayscale_to_rgb(fake_P)
+        class_N_loss = self.classifier(fake_N)
+        class_P_loss = self.classifier(fake_P)
 
         # Combined model trains generators to fool discriminators
         self.combined = Model(inputs=[img_N, img_P],
@@ -236,7 +236,12 @@ class CycleGAN():
         reconstr_P = self.g_NP.predict(fake_N)
 
         imgs = [img_N, fake_P, reconstr_N, img_P, fake_N, reconstr_P]
-        classification = [['normal', 'abnormal'][int(np.argmax(self.classifier.predict(x)))] for x in imgs]
+        if self.clf_name == "inception" and tf.shape(img_N)[-1] == 1:
+            classification = [
+                ['normal', 'abnormal'][int(np.argmax(self.classifier.predict(tf.image.grayscale_to_rgb(x))))] for x in
+                imgs]
+        else:
+            classification = [['normal', 'abnormal'][int(np.argmax(self.classifier.predict(x)))] for x in imgs]
 
         gen_imgs = np.concatenate(imgs)
         correct_classification = ['normal', 'abnormal', 'normal', 'abnormal', 'normal', 'abnormal']
