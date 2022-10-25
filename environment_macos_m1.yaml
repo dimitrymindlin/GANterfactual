@@ -1,0 +1,19 @@
+name: GANterfactual
+channels:
+  - conda-forge
+  - apple
+  - esri
+  - defaults
+dependencies:
+  - apple::tensorflow-deps
+  - matplotlib
+  - pip
+  - scikit-learn
+  - scikit-image
+  - albumentations
+  - opencv
+  - pip:
+    - tensorflow-macos<=2.9.0
+    - tensorflow-metal
+    - tensorflow-datasets<=4.7.0
+    - tensorflow-addons
