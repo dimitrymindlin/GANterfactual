@@ -53,7 +53,6 @@ class CycleGAN():
         # Build the generators
         self.g_NP = build_generator(self.img_shape, self.gf, self.channels)
         self.g_PN = build_generator(self.img_shape, self.gf, self.channels)
-        self.g_PN.summary()
 
         self.build_combined(classifier_path, classifier_weight)
 
