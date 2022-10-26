@@ -124,7 +124,7 @@ class CycleGAN:
         self.classifier._name = "classifier"
         self.classifier.trainable = False
 
-        if self.clf_name == "inception" and tf.shape(fake_N)[-1] == 1:  # Turning to RGB for Inception Model
+        if self.clf_name == "inception":  # Turning to RGB for Inception Model
             fake_N = tf.image.grayscale_to_rgb(fake_N)
             fake_P = tf.image.grayscale_to_rgb(fake_P)
         class_N_loss = self.classifier(fake_N)
