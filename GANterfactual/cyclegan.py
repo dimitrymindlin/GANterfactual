@@ -236,7 +236,7 @@ class CycleGAN:
         reconstr_P = self.g_NP.predict(fake_N)
 
         imgs = [img_N, fake_P, reconstr_N, img_P, fake_N, reconstr_P]
-        if self.clf_name == "inception" and tf.shape(img_N)[-1] == 1:
+        if self.clf_name == "inception":
             classification = [
                 ['normal', 'abnormal'][int(np.argmax(self.classifier.predict(tf.image.grayscale_to_rgb(x))))] for x in
                 imgs]
