@@ -4,8 +4,8 @@ from datetime import datetime
 
 from GANterfactual.cyclegan import CycleGAN
 
-# MODEL_NAME = "alexnet"
-MODEL_NAME = "inception"
+MODEL_NAME = "alexnet"
+#MODEL_NAME = "inception"
 INCEPTION_CKP = "2022-10-12--10.37"
 
 if __name__ == '__main__':
